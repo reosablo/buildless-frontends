@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Buildless Angular 17 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@angular/common": "https://esm.sh/*@angular/common@17.3.12?dev",
+          "@angular/common/": "https://esm.sh/*@angular/common@17.3.12&dev/",
+          "@angular/compiler": "https://esm.sh/*@angular/compiler@17.3.12?dev",
+          "@angular/core": "https://esm.sh/*@angular/core@17.3.12?dev",
+          "@angular/core/": "https://esm.sh/*@angular/core@17.3.12&dev/",
+          "@angular/platform-browser": "https://esm.sh/*@angular/platform-browser@17.3.12?dev",
+          "zone.js": "https://esm.sh/*zone.js@~0.14.0?dev",
+          "rxjs": "https://esm.sh/*rxjs@^7.4.0?dev",
+          "rxjs/": "https://esm.sh/*rxjs@^7.4.0&dev/",
+          "tslib": "https://esm.sh/*tslib@^2.3.0?dev"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePlugins,
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+
+      registerPreset("angular", {
+        presets: [[availablePresets["typescript"]]],
+        plugins: [
+          [availablePlugins["proposal-decorators"], { version: "legacy" }],
+          [availablePlugins["transform-class-properties"]],
+        ],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="angular"
+      data-plugins=""
+      data-type="module"
+      src="./main.ts"
+    ></script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
+</html>

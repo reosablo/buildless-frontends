@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "@angular/common": "https://esm.sh/*@angular/common@17.3.12?dev",
+    "@angular/common/": "https://esm.sh/*@angular/common@17.3.12&dev/",
+    "@angular/compiler": "https://esm.sh/*@angular/compiler@17.3.12?dev",
+    "@angular/core": "https://esm.sh/*@angular/core@17.3.12?dev",
+    "@angular/core/": "https://esm.sh/*@angular/core@17.3.12&dev/",
+    "@angular/platform-browser": "https://esm.sh/*@angular/platform-browser@17.3.12?dev",
+    "zone.js": "https://esm.sh/*zone.js@~0.14.0?dev",
+    "rxjs": "https://esm.sh/*rxjs@^7.4.0?dev",
+    "rxjs/": "https://esm.sh/*rxjs@^7.4.0&dev/",
+    "tslib": "https://esm.sh/*tslib@^2.3.0?dev"
+  }
+}
