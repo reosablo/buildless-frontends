@@ -15,20 +15,23 @@ import { bootstrapApplication } from "@angular/platform-browser";
 import type { User } from "jsonplaceholder-types/types/user";
 import type { Post } from "jsonplaceholder-types/types/post";
 
+const urlBase = "https://jsonplaceholder.typicode.com";
+
 @Injectable({ providedIn: "root" })
-class AppService {
-  static readonly #urlBase = "https://jsonplaceholder.typicode.com";
-
+class UserService {
   getUsers() {
-    return httpResource<User[]>(() => `${AppService.#urlBase}/users`);
+    return httpResource<User[]>(() => `${urlBase}/users`);
   }
+}
 
+@Injectable({ providedIn: "root" })
+class PostService {
   getPosts(userIdSignal: Signal<string | undefined>) {
     return httpResource<Post[]>(() => {
       const userId = userIdSignal();
       if (userId == undefined) return undefined;
       return {
-        url: `${AppService.#urlBase}/posts`,
+        url: `${urlBase}/posts`,
         params: { userId },
       };
     });
@@ -78,8 +81,8 @@ class App {
   readonly #formState = signal({ selectedUserId: "" });
 
   protected readonly form = form(this.#formState);
-  protected readonly users = inject(AppService).getUsers();
-  protected readonly posts = inject(AppService).getPosts(
+  protected readonly users = inject(UserService).getUsers();
+  protected readonly posts = inject(PostService).getPosts(
     computed(() => this.#formState().selectedUserId || undefined),
   );
 }

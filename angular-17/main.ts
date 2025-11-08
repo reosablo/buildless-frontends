@@ -9,18 +9,23 @@ import { bootstrapApplication } from "@angular/platform-browser";
 import type { User } from "jsonplaceholder-types/types/user";
 import type { Post } from "jsonplaceholder-types/types/post";
 
-@Injectable({ providedIn: "root" })
-class AppService {
-  static readonly #urlBase = "https://jsonplaceholder.typicode.com";
+const urlBase = "https://jsonplaceholder.typicode.com";
 
+@Injectable({ providedIn: "root" })
+class UserService {
   readonly #httpClient = inject(HttpClient);
 
   getUsers() {
-    return this.#httpClient.get<User[]>(`${AppService.#urlBase}/users`);
+    return this.#httpClient.get<User[]>(`${urlBase}/users`);
   }
+}
+
+@Injectable({ providedIn: "root" })
+class PostService {
+  readonly #httpClient = inject(HttpClient);
 
   getPosts(userId: number) {
-    return this.#httpClient.get<Post[]>(`${AppService.#urlBase}/posts`, {
+    return this.#httpClient.get<Post[]>(`${urlBase}/posts`, {
       params: { userId },
     });
   }
@@ -57,9 +62,9 @@ class AppService {
   `,
 })
 class AppComponent {
-  readonly #appService = inject(AppService);
+  readonly #postService = inject(PostService);
 
-  protected readonly users = toSignal(this.#appService.getUsers());
+  protected readonly users = toSignal(inject(UserService).getUsers());
   protected readonly selectedUserId = signal<number | undefined>(undefined);
   protected readonly posts = signal<unknown>(undefined);
 
@@ -67,7 +72,7 @@ class AppComponent {
     effect((onCleanup) => {
       const selectedUserId = this.selectedUserId();
       if (selectedUserId !== undefined) {
-        const subscription = this.#appService
+        const subscription = this.#postService
           .getPosts(selectedUserId)
           .subscribe((posts) => this.posts.set(posts));
         onCleanup(() => subscription.unsubscribe());
