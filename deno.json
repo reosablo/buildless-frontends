@@ -1,5 +1,5 @@
 {
-  "workspace": ["./angular-*", "./hono-*"],
+  "workspace": ["./angular-*", "./hono-*", "./solid-*"],
   "imports": {
     "jsonplaceholder-types/": "https://esm.sh/*jsonplaceholder-types@1.0.2&dev/"
   },
