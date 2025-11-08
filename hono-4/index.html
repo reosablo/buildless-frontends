@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Buildless Hono 4 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "hono/": "https://esm.sh/*hono@4.10.4&dev/"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+
+      registerPreset("jsx", {
+        presets: [[availablePresets["react"], { runtime: "automatic" }]],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="jsx,typescript"
+      data-plugins=""
+      data-type="module"
+      src="./main.tsx"
+    ></script>
+  </head>
+  <body></body>
+</html>
