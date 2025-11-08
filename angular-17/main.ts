@@ -6,6 +6,8 @@ import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { Component, effect, inject, Injectable, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { bootstrapApplication } from "@angular/platform-browser";
+import type { User } from "jsonplaceholder-types/types/user";
+import type { Post } from "jsonplaceholder-types/types/post";
 
 @Injectable({ providedIn: "root" })
 class AppService {
@@ -14,11 +16,11 @@ class AppService {
   readonly #httpClient = inject(HttpClient);
 
   getUsers() {
-    return this.#httpClient.get(`${AppService.#urlBase}/users`);
+    return this.#httpClient.get<User[]>(`${AppService.#urlBase}/users`);
   }
 
   getPosts(userId: number) {
-    return this.#httpClient.get(`${AppService.#urlBase}/posts`, {
+    return this.#httpClient.get<Post[]>(`${AppService.#urlBase}/posts`, {
       params: { userId },
     });
   }

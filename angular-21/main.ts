@@ -12,17 +12,19 @@ import {
 } from "@angular/core";
 import { Field, form } from "@angular/forms/signals";
 import { bootstrapApplication } from "@angular/platform-browser";
+import type { User } from "jsonplaceholder-types/types/user";
+import type { Post } from "jsonplaceholder-types/types/post";
 
 @Injectable({ providedIn: "root" })
 class AppService {
   static readonly #urlBase = "https://jsonplaceholder.typicode.com";
 
   getUsers() {
-    return httpResource(() => `${AppService.#urlBase}/users`);
+    return httpResource<User[]>(() => `${AppService.#urlBase}/users`);
   }
 
   getPosts(userIdSignal: Signal<string | undefined>) {
-    return httpResource(() => {
+    return httpResource<Post[]>(() => {
       const userId = userIdSignal();
       if (userId == undefined) return undefined;
       return {
