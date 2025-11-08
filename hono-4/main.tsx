@@ -11,7 +11,7 @@ function useUsers() {
   const [users, setUsers] = useState<User[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  useEffect(function fetchUsers() {
     const ctrl = new AbortController();
     const signal = ctrl.signal;
 
@@ -39,7 +39,7 @@ function usePosts(userId: number | undefined) {
   const [posts, setPosts] = useState<Post[] | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  useEffect(function fetchPosts() {
     if (userId === undefined) return;
 
     const ctrl = new AbortController();
