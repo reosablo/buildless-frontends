@@ -42,6 +42,7 @@ class AppService {
       <label>
         Select User:
         <select [field]="form.selectedUserId">
+          <option hidden selected></option>
           @for (user of users.value(); track user.id) {
             <option value="{{ user.id }}">
               &#64;{{ user.username }}: {{ user.name }}
