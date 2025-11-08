@@ -2,5 +2,8 @@
   "workspace": ["./angular-*", "./hono-*"],
   "imports": {
     "jsonplaceholder-types/": "https://esm.sh/*jsonplaceholder-types@1.0.2&dev/"
+  },
+  "compilerOptions": {
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

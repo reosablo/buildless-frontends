@@ -1,5 +1,4 @@
 /** @jsxImportSource hono/jsx */
-/// <reference lib="DOM" />
 
 import { useEffect, useState } from "hono/jsx";
 import { createRoot } from "hono/jsx/dom/client";
