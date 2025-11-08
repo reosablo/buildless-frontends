@@ -1,6 +1,5 @@
 import "@angular/compiler";
 
-import { TitleCasePipe } from "@angular/common";
 import { httpResource } from "@angular/common/http";
 import {
   Component,
@@ -40,7 +39,7 @@ class PostService {
 
 @Component({
   selector: "app-root",
-  imports: [Field, TitleCasePipe],
+  imports: [Field],
   template: `
     <h1>Buildless Angular 21 app</h1>
     @if (users.hasValue()) {
@@ -61,7 +60,7 @@ class PostService {
     @if (posts.hasValue()) {
       <ul>
         @for (post of posts.value(); track post.id) {
-          <li>{{ post.title | titlecase }}</li>
+          <li>{{ post.title }}</li>
         }
       </ul>
     } @else if (posts.isLoading()) {

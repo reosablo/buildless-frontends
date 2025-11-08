@@ -1,7 +1,6 @@
 import "@angular/compiler";
 import "zone.js";
 
-import { TitleCasePipe } from "@angular/common";
 import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { Component, effect, inject, Injectable, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
@@ -34,7 +33,6 @@ class PostService {
 @Component({
   standalone: true,
   selector: "app-root",
-  imports: [TitleCasePipe],
   template: `
     <h1>Buildless Angular 17 app</h1>
     <label>
@@ -50,7 +48,7 @@ class PostService {
     </label>
     <ul>
       @for (post of posts(); track post.id) {
-        <li>{{ post.title | titlecase }}</li>
+        <li>{{ post.title }}</li>
       }
     </ul>
     <p>
