@@ -25,7 +25,7 @@ class UserService {
 
 @Injectable({ providedIn: "root" })
 class PostService {
-  getPosts(userIdSignal: Signal<string | undefined>) {
+  getPosts(userIdSignal: Signal<number | undefined>) {
     return httpResource<Post[]>(() => {
       const userId = userIdSignal();
       if (userId == undefined) return undefined;
@@ -78,11 +78,16 @@ class PostService {
 })
 class App {
   readonly #formState = signal({ selectedUserId: "" });
+  readonly #selectedUserId = computed(() => {
+    const userId = this.#formState().selectedUserId;
+    if (userId === "") return undefined;
+    return +userId;
+  });
 
   protected readonly form = form(this.#formState);
   protected readonly users = inject(UserService).getUsers();
   protected readonly posts = inject(PostService).getPosts(
-    computed(() => this.#formState().selectedUserId || undefined),
+    this.#selectedUserId,
   );
 }
 
