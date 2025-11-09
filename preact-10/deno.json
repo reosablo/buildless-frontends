@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@preact/signals": "https://esm.sh/*@preact/signals@2.4.0?dev",
+    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.12.1?dev",
+    "preact": "https://esm.sh/*preact@10.27.2?dev",
+    "preact/": "https://esm.sh/*preact@10.27.2&dev/"
+  }
+}

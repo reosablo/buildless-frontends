@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Buildless Preact 10 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@preact/signals": "https://esm.sh/*@preact/signals@2.4.0?dev",
+          "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.12.1?dev",
+          "preact": "https://esm.sh/*preact@10.27.2?dev",
+          "preact/": "https://esm.sh/*preact@10.27.2&dev/"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+
+      registerPreset("jsx", {
+        presets: [[availablePresets["react"], { runtime: "automatic" }]],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="jsx,typescript"
+      data-plugins=""
+      data-type="module"
+      src="./main.tsx"
+    ></script>
+  </head>
+  <body></body>
+</html>
