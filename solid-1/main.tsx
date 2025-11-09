@@ -1,16 +1,17 @@
 /** @jsxImportSource solid-js */
 
+import type { Post } from "jsonplaceholder-types/types/post";
+import type { User } from "jsonplaceholder-types/types/user";
 import {
   type Accessor,
   createResource,
   createSignal,
   For,
+  Match,
   onCleanup,
-  Show,
+  Switch,
 } from "solid-js";
 import { render } from "solid-js/web";
-import type { User } from "jsonplaceholder-types/types/user";
-import type { Post } from "jsonplaceholder-types/types/post";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 
@@ -45,52 +46,46 @@ const App = () => {
   return (
     <>
       <h1>Buildless SolidJS 1 app</h1>
-      <Show
-        when={users()}
-        fallback={
-          <Show when={users.loading}>
-            <p>Loading Users...</p>
-          </Show>
-        }
-      >
-        {(users) => (
-          <label>
-            Select User:
-            <select
-              onChange={(e) => setSelectedUserId(+e.currentTarget.value)}
-            >
-              <For each={users()}>
-                {(user) => (
-                  <option value={user.id}>@{user.username}: {user.name}</option>
-                )}
+      <Switch>
+        <Match when={users()}>
+          {(users) => (
+            <label>
+              Select User:
+              <select
+                onChange={(e) => setSelectedUserId(+e.currentTarget.value)}
+              >
+                <For each={users()}>
+                  {(user) => (
+                    <option value={user.id}>
+                      @{user.username}: {user.name}
+                    </option>
+                  )}
+                </For>
+              </select>
+            </label>
+          )}
+        </Match>
+        <Match when={users.loading}>
+          <p>Loading Users...</p>
+        </Match>
+      </Switch>
+      <Switch>
+        <Match when={posts()}>
+          {(posts) => (
+            <ul>
+              <For each={posts()}>
+                {(post) => <li>{post.title}</li>}
               </For>
-            </select>
-          </label>
-        )}
-      </Show>
-      <Show
-        when={posts()}
-        fallback={
-          <Show
-            when={posts.loading}
-            fallback={
-              <Show when={users}>
-                <p>Select User to view posts</p>
-              </Show>
-            }
-          >
-            <p>Loading Posts...</p>
-          </Show>
-        }
-      >
-        {(posts) => (
-          <ul>
-            <For each={posts()}>
-              {(post) => <li>{post.title}</li>}
-            </For>
-          </ul>
-        )}
-      </Show>
+            </ul>
+          )}
+        </Match>
+        <Match when={posts.loading}>
+          <p>Loading Posts...</p>
+        </Match>
+        <Match when={users()}>
+          <p>Select User to view posts</p>
+        </Match>
+      </Switch>
       <p>
         Data Source:
         <a href="https://jsonplaceholder.typicode.com/" target="_blank">
