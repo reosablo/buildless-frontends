@@ -10,6 +10,7 @@
     "jsonplaceholder-types/": "https://esm.sh/*jsonplaceholder-types@1.0.2&dev/"
   },
   "compilerOptions": {
+    "erasableSyntaxOnly": true,
     "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }
