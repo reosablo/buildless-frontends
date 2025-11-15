@@ -8,3 +8,4 @@ steps.
 * [Hono 4](./hono-4/)
 * [Preact 10](./preact-10/)
 * [Solid 1](./solid-1/)
+* [Vue 3](./vue-3/)

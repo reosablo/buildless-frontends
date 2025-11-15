@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@vue/compiler-sfc": "https://esm.sh/*@vue/compiler-sfc@3.5.24?dev",
+    "@vue/reactivity": "https://esm.sh/*@vue/reactivity@3.5.24?dev",
+    "@vue/runtime-core": "https://esm.sh/*@vue/runtime-core@3.5.24?dev",
+    "@vue/runtime-dom": "https://esm.sh/*@vue/runtime-dom@3.5.24?dev",
+    "@vue/shared": "https://esm.sh/*@vue/shared@3.5.24?dev",
+    "vue": "https://esm.sh/*vue@3.5.24?dev",
+    "vue/": "https://esm.sh/*vue@3.5.24&dev/"
+  }
+}
