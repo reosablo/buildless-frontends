@@ -4,6 +4,7 @@
     "./hono-*",
     "./preact-*",
     "./solid-*",
+    "./svelte-*",
     "./vue-*"
   ],
   "imports": {
