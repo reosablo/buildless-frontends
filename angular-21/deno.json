@@ -12,5 +12,8 @@
     "rxjs": "https://esm.sh/*rxjs@^7.4.0?dev",
     "rxjs/": "https://esm.sh/*rxjs@^7.4.0&dev/",
     "tslib": "https://esm.sh/*tslib@^2.3.0?dev"
+  },
+  "compilerOptions": {
+    "experimentalDecorators": true
   }
 }
