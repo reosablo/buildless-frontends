@@ -2,6 +2,7 @@
   "workspace": [
     "./angular-*",
     "./hono-*",
+    "./lit-*",
     "./preact-*",
     "./solid-*",
     "./svelte-*",

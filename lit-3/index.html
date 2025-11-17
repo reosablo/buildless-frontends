@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buildless Lit 3 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@lit/reactive-element": "https://esm.sh/*@lit/reactive-element@2.1.1?dev",
+          "@lit/reactive-element/": "https://esm.sh/*@lit/reactive-element@2.1.1&dev/",
+          "lit": "https://esm.sh/*lit@3.3.1?dev",
+          "lit-element/": "https://esm.sh/*lit-element@4.2.1&dev/",
+          "lit-html": "https://esm.sh/*lit-html@3.3.1?dev",
+          "lit-html/": "https://esm.sh/*lit-html@3.3.1&dev/",
+          "lit/": "https://esm.sh/*lit@3.3.1&dev/"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePlugins,
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+
+      registerPreset("lit", {
+        presets: [[availablePresets["typescript"]]],
+        plugins: [
+          [availablePlugins["proposal-decorators"], { version: "2023-05" }],
+          [availablePlugins["transform-class-properties"]],
+          [availablePlugins["transform-class-static-block"]],
+          [availablePlugins["transform-private-methods"]],
+        ],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="lit"
+      data-plugins=""
+      data-type="module"
+      src="./main.ts"
+    ></script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@lit/reactive-element": "https://esm.sh/*@lit/reactive-element@2.1.1?dev",
+    "@lit/reactive-element/": "https://esm.sh/*@lit/reactive-element@2.1.1&dev/",
+    "lit": "https://esm.sh/*lit@3.3.1?dev",
+    "lit-element/": "https://esm.sh/*lit-element@4.2.1&dev/",
+    "lit-html": "https://esm.sh/*lit-html@3.3.1?dev",
+    "lit-html/": "https://esm.sh/*lit-html@3.3.1&dev/",
+    "lit/": "https://esm.sh/*lit@3.3.1&dev/"
+  }
+}
