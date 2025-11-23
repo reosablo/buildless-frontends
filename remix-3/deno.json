@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@remix-run/dom": "https://esm.sh/*@remix-run/dom@0.0.0-experimental-remix-jam.6?dev",
+    "@remix-run/dom/": "https://esm.sh/*@remix-run/dom@0.0.0-experimental-remix-jam.6&dev/",
+    "@remix-run/events": "https://esm.sh/*@remix-run/events@0.0.0-experimental-remix-jam.1?dev",
+    "@remix-run/events/": "https://esm.sh/*@remix-run/events@0.0.0-experimental-remix-jam.1&dev/",
+    "@remix-run/style": "https://esm.sh/*@remix-run/style@0.0.0-experimental-remix-jam.1?dev"
+  }
+}

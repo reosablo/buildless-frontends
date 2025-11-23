@@ -4,6 +4,7 @@
     "./hono-*",
     "./lit-*",
     "./preact-*",
+    "./remix-*",
     "./solid-*",
     "./svelte-*",
     "./vue-*"

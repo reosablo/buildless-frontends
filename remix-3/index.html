@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buildless Remix 3 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@remix-run/dom": "https://esm.sh/*@remix-run/dom@0.0.0-experimental-remix-jam.6?dev",
+          "@remix-run/dom/": "https://esm.sh/*@remix-run/dom@0.0.0-experimental-remix-jam.6&dev/",
+          "@remix-run/events": "https://esm.sh/*@remix-run/events@0.0.0-experimental-remix-jam.1?dev",
+          "@remix-run/events/": "https://esm.sh/*@remix-run/events@0.0.0-experimental-remix-jam.1&dev/",
+          "@remix-run/style": "https://esm.sh/*@remix-run/style@0.0.0-experimental-remix-jam.1?dev"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+
+      registerPreset("jsx", {
+        presets: [[availablePresets["react"], { runtime: "automatic" }]],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="jsx,typescript"
+      data-plugins=""
+      data-type="module"
+      src="./main.tsx"
+    ></script>
+  </head>
+  <body></body>
+</html>
