@@ -6,6 +6,7 @@ steps.
 * [Angular 17](./angular-17/)
 * [Angular 21](./angular-21/)
 * [Hono 4](./hono-4/)
+* [Htmx 2](./htmx-2/)
 * [Lit 3](./lit-3/)
 * [Preact 10](./preact-10/)
 * [Remix 3](./remix-3/)

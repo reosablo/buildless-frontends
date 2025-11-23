@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Buildless htmx 2 app</title>
+    <meta name="htmx-config" content='{"selfRequestsOnly":false}' />
+    <style>
+      #users.htmx-request,
+      #posts.htmx-request,
+      .loading-users:not(.htmx-request),
+      .loading-posts:not(.htmx-request) {
+        display: none;
+      }
+    </style>
+    <script src="https://unpkg.com/htmx.org@2.0.8"></script>
+    <script src="https://unpkg.com/htmx-json@1.9.6"></script>
+  </head>
+  <body hx-ext="json-swap">
+    <h1>Buildless htmx 2 app</h1>
+    <label
+      id="users"
+      hx-get="https://jsonplaceholder.typicode.com/users"
+      hx-trigger="load"
+      hx-swap="json"
+      hx-target="#users, #posts-status"
+      hx-indicator="#users, .loading-users"
+    >
+      Select User:
+      <select
+        name="userId"
+        hx-get="https://jsonplaceholder.typicode.com/posts"
+        hx-swap="json"
+        hx-target="#posts"
+        hx-indicator="#posts, .loading-posts"
+      >
+        <option hidden selected></option>
+        <template json-each="$this" json-key="id">
+          <option @value="id">@${username}: ${name}</option>
+        </template>
+      </select>
+    </label>
+    <p class="loading-users">Loading Users...</p>
+    <ul id="posts">
+      <template json-each="$this" json-key="id">
+        <li>${title}</li>
+      </template>
+    </ul>
+    <p class="loading-posts">Loading Posts...</p>
+  </body>
+</html>
