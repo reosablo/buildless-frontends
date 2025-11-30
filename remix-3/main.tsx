@@ -2,65 +2,63 @@
 
 import { createRoot, type Remix } from "@remix-run/dom";
 import { dom } from "@remix-run/events";
-import type { User } from "jsonplaceholder-types/types/user";
 import type { Post } from "jsonplaceholder-types/types/post";
-
-function isAbortError(
-  error: unknown,
-): error is DOMException & { name: "AbortError" } {
-  return error instanceof DOMException && error.name === "AbortError";
-}
+import type { User } from "jsonplaceholder-types/types/user";
 
 function App(this: Remix.Handle) {
-  let selectedUserId: number | undefined;
+  const urlBase = "https://jsonplaceholder.typicode.com";
+
   let users: User[] | undefined;
   let posts: Post[] | undefined;
   let loadingUsers = false;
   let loadingPosts = false;
 
-  const fetchUsers: Remix.Task = async (signal) => {
+  const fetchUsers = async (signal: AbortSignal) => {
     loadingUsers = true;
-    try {
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/users",
-        { signal },
-      );
-      users = await response.json() as User[];
-      this.update();
-    } catch (error) {
-      if (!isAbortError(error)) {
-        throw error;
-      }
-    } finally {
-      loadingUsers = false;
-    }
-  };
-
-  const fetchPosts: Remix.Task = async (signal) => {
-    loadingPosts = true;
-    try {
-      const response = await fetch(
-        `https://jsonplaceholder.typicode.com/posts?userId=${selectedUserId}`,
-        { signal },
-      );
-      posts = await response.json() as Post[];
-      this.update();
-    } catch (error) {
-      if (!isAbortError(error)) {
-        throw error;
-      }
-    } finally {
-      loadingPosts = false;
-    }
-  };
-
-  const selectUserId = (id: number, signal: AbortSignal) => {
-    selectedUserId = id;
-    fetchPosts(signal);
     this.update();
+    try {
+      const response = await fetch(`${urlBase}/users`, { signal });
+      const data = await response.json() as User[];
+      signal.throwIfAborted();
+      users = data;
+      loadingUsers = false;
+      this.update();
+    } catch (error) {
+      if (signal.aborted) return;
+      loadingUsers = false;
+      this.update();
+      throw error;
+    }
   };
 
-  this.queueTask(fetchUsers);
+  const fetchPosts = async (userId: number, signal: AbortSignal) => {
+    loadingPosts = true;
+    this.update();
+    try {
+      const response = await fetch(
+        `${urlBase}/posts?userId=${userId}`,
+        { signal },
+      );
+      const data = await response.json() as Post[];
+      signal.throwIfAborted();
+      posts = data;
+      loadingPosts = false;
+      this.update();
+    } catch (error) {
+      if (signal.aborted) return;
+      loadingPosts = false;
+      this.update();
+      throw error;
+    }
+  };
+
+  const selectUserId = (userId: number, signal: AbortSignal) => {
+    fetchPosts(userId, signal);
+  };
+
+  this.queueTask(() => {
+    fetchUsers(this.signal);
+  });
 
   return () => (
     <>
@@ -70,11 +68,12 @@ function App(this: Remix.Handle) {
               Select User:
               <select
                 on={[
-                  dom.change(({ currentTarget }, signal) => {
-                    selectUserId(+currentTarget.value, signal);
+                  dom.change(function handleChange(event, signal) {
+                    selectUserId(+event.currentTarget.value, signal);
                   }),
                 ]}
               >
+                <option hidden selected></option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     @{user.username}: {user.name}
@@ -95,5 +94,4 @@ function App(this: Remix.Handle) {
   );
 }
 
-const root = createRoot(document.body);
-root.render(<App />);
+createRoot(document.body).render(<App />);
