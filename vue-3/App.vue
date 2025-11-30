@@ -1,51 +1,63 @@
 <script setup lang="ts">
-import { onWatcherCleanup, ref, reactive, watchEffect } from "vue";
+import type { Post } from "jsonplaceholder-types/types/post";
+import type { User } from "jsonplaceholder-types/types/user";
+import { onWatcherCleanup, reactive, ref, watchEffect } from "vue";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 
-const selectedUserId = ref();
-const users = reactive({ value: undefined, loading: false });
-const posts = reactive({ value: undefined, loading: false });
+const selectedUserId = ref<number>();
+const posts = reactive<{
+  value?: Post[];
+  loading: boolean;
+}>({ loading: false });
+const users = reactive<{
+  value?: User[];
+  loading: boolean;
+}>({ loading: false });
 
-watchEffect(function fetchUsers() {
+async function fetchUsers(signal: AbortSignal) {
   users.loading = true;
-  const controller = new AbortController();
-  onWatcherCleanup(() => controller.abort());
+  try {
+    const response = await fetch(`${urlBase}/users`, { signal });
+    const data = await response.json();
+    signal.throwIfAborted();
+    users.value = data;
+    users.loading = false;
+  } catch (error) {
+    if (signal.aborted) return;
+    users.loading = false;
+    throw error;
+  }
+}
 
-  fetch(`${urlBase}/users`, { signal: controller.signal })
-    .then(async (response) => {
-      users.value = await response.json();
-    })
-    .catch((error) => {
-      if (!(error instanceof DOMException && error.name === "AbortError")) {
-        throw error;
-      }
-    })
-    .finally(() => {
-      users.loading = false;
+async function fetchPosts(userId: number, signal: AbortSignal) {
+  posts.loading = true;
+  try {
+    const response = await fetch(`${urlBase}/posts?userId=${userId}`, {
+      signal,
     });
+    const data = await response.json();
+    signal.throwIfAborted();
+    posts.value = data;
+    posts.loading = false;
+  } catch (error) {
+    if (signal.aborted) return;
+    posts.loading = false;
+    throw error;
+  }
+}
+
+watchEffect(function updateUsers() {
+  const ctrl = new AbortController();
+  onWatcherCleanup(() => ctrl.abort());
+  fetchUsers(ctrl.signal);
 });
 
-watchEffect(function fetchPosts() {
+watchEffect(function updatePosts() {
   if (selectedUserId.value === undefined) return;
-  posts.loading = true;
-  const controller = new AbortController();
-  onWatcherCleanup(() => controller.abort());
-
-  fetch(`${urlBase}/posts?userId=${selectedUserId.value}`, {
-    signal: controller.signal,
-  })
-    .then(async (response) => {
-      posts.value = await response.json();
-    })
-    .catch((error) => {
-      if (!(error instanceof DOMException && error.name === "AbortError")) {
-        throw error;
-      }
-    })
-    .finally(() => {
-      posts.loading = false;
-    });
+  const ctrl = new AbortController();
+  onWatcherCleanup(() => ctrl.abort());
+  fetchPosts(selectedUserId.value, ctrl.signal);
 });
 </script>
 
