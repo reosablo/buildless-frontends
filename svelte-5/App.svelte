@@ -1,63 +1,61 @@
 <script lang="ts">
-  import type { User } from "jsonplaceholder-types/types/user";
+  /// <reference types="svelte" />
   import type { Post } from "jsonplaceholder-types/types/post";
+  import type { User } from "jsonplaceholder-types/types/user";
 
   const urlBase = "https://jsonplaceholder.typicode.com";
 
   let selectedUserId = $state<number | undefined>(undefined);
-  const users = $state<{ value: User[] | undefined; loading: boolean }>({
-    value: undefined,
-    loading: false,
-  });
-  const posts = $state<{ value: Post[] | undefined; loading: boolean }>({
-    value: undefined,
-    loading: false,
-  });
+  const users = $state<{
+    value?: User[];
+    loading: boolean;
+  }>({ loading: false });
+  const posts = $state<{
+    value?: Post[];
+    loading: boolean;
+  }>({ loading: false });
 
-  $effect(() => {
+  async function fetchUsers(signal: AbortSignal) {
     users.loading = true;
-    const controller = new AbortController();
+    try {
+      const response = await fetch(`${urlBase}/users`, { signal });
+      const data = (await response.json()) as User[];
+      users.value = data;
+      users.loading = false;
+    } catch (error) {
+      if (signal.aborted) return;
+      users.loading = false;
+      throw error;
+    }
+  }
 
-    fetch(`${urlBase}/users`, { signal: controller.signal })
-      .then(async (response) => {
-        users.value = await response.json();
-      })
-      .catch((error) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          throw error;
-        }
-      })
-      .finally(() => {
-        users.loading = false;
+  async function fetchPosts(userId: number, signal: AbortSignal) {
+    posts.loading = true;
+    try {
+      const response = await fetch(`${urlBase}/posts?userId=${userId}`, {
+        signal,
       });
+      const data = (await response.json()) as Post[];
+      posts.value = data;
+      posts.loading = false;
+    } catch (error) {
+      if (signal.aborted) return;
+      posts.loading = false;
+      throw error;
+    }
+  }
 
-    return () => controller.abort();
+  $effect(function updateUsers() {
+    const ctrl = new AbortController();
+    fetchUsers(ctrl.signal);
+    return () => ctrl.abort();
   });
 
-  $effect(() => {
-    if (selectedUserId === undefined) {
-      posts.value = undefined;
-      return;
-    }
-    posts.loading = true;
-    const controller = new AbortController();
-
-    fetch(`${urlBase}/posts?userId=${selectedUserId}`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        posts.value = await response.json();
-      })
-      .catch((error) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          throw error;
-        }
-      })
-      .finally(() => {
-        posts.loading = false;
-      });
-
-    return () => controller.abort();
+  $effect(function updatePosts() {
+    if (selectedUserId === undefined) return;
+    const ctrl = new AbortController();
+    fetchPosts(selectedUserId, ctrl.signal);
+    return () => ctrl.abort();
   });
 </script>
 
