@@ -1,19 +1,19 @@
+import type { Post } from "jsonplaceholder-types/types/post";
+import type { User } from "jsonplaceholder-types/types/user";
 import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import type { User } from "jsonplaceholder-types/types/user";
-import type { Post } from "jsonplaceholder-types/types/post";
 
 @customElement("app-root")
 export class AppElement extends LitElement {
   static readonly #urlBase = "https://jsonplaceholder.typicode.com";
 
   @state()
+  private accessor _selectedUserId: number | undefined;
+
+  @state()
   private accessor _users: User[] | undefined;
   @state()
   private accessor _loadingUsers = false;
-
-  @state()
-  private accessor _selectedUserId: number | undefined;
 
   @state()
   private accessor _posts: Post[] | undefined;
@@ -35,56 +35,52 @@ export class AppElement extends LitElement {
   }
 
   override updated(changed: Map<string, unknown>) {
-    if (changed.has("_selectedUserId")) {
-      this.#fetchPosts();
+    const selectedUserId = this._selectedUserId;
+    if (changed.has("_selectedUserId") && selectedUserId !== undefined) {
+      this.#fetchPosts(selectedUserId);
     }
   }
 
   async #fetchUsers() {
-    this._loadingUsers = true;
     this.#usersController?.abort();
-    this.#usersController = new AbortController();
+    const ctrl = this.#usersController = new AbortController();
+
+    this._loadingUsers = true;
     try {
       const res = await fetch(
         `${AppElement.#urlBase}/users`,
-        { signal: this.#usersController.signal },
+        { signal: ctrl.signal },
       );
-      this._users = await res.json();
-    } catch (err) {
-      if (!(err instanceof DOMException && err.name === "AbortError")) {
-        throw err;
-      }
-    } finally {
+      const users = await res.json() as User[];
+      ctrl.signal.throwIfAborted();
+      this._users = users;
       this._loadingUsers = false;
+    } catch (error) {
+      if (ctrl.signal.aborted) return;
+      this._loadingUsers = false;
+      throw error;
     }
   }
 
-  async #fetchPosts() {
-    if (this._selectedUserId === undefined) {
-      this._posts = undefined;
-      return;
-    }
-    this._loadingPosts = true;
+  async #fetchPosts(userId: number) {
     this.#postsController?.abort();
-    this.#postsController = new AbortController();
+    const ctrl = this.#postsController = new AbortController();
+
+    this._loadingPosts = true;
     try {
       const res = await fetch(
-        `${AppElement.#urlBase}/posts?userId=${this._selectedUserId}`,
-        { signal: this.#postsController.signal },
+        `${AppElement.#urlBase}/posts?userId=${userId}`,
+        { signal: ctrl.signal },
       );
-      this._posts = await res.json();
-    } catch (err) {
-      if (!(err instanceof DOMException && err.name === "AbortError")) {
-        throw err;
-      }
-    } finally {
+      const posts = await res.json() as Post[];
+      ctrl.signal.throwIfAborted();
+      this._posts = posts;
       this._loadingPosts = false;
+    } catch (error) {
+      if (ctrl.signal.aborted) return;
+      this._loadingPosts = false;
+      throw error;
     }
-  }
-
-  #onUserChange(e: Event) {
-    const value = (e.target as HTMLSelectElement).value;
-    this._selectedUserId = value ? Number(value) : undefined;
   }
 
   override render() {
@@ -94,19 +90,18 @@ export class AppElement extends LitElement {
         ? html`
           <label>
             Select User:
-            <select @change="${this.#onUserChange}">
-              <option ?selected="${this._selectedUserId ===
-                undefined}" hidden></option>
-              ${this._users.map(
-                (user) =>
-                  html`
-                    <option
-                      value="${user.id}"
-                      ?selected="${user.id === this._selectedUserId}"
-                    >
-                      @${user.username}: ${user.name}
-                    </option>
-                  `,
+            <select @change="${(
+              event: Event & { currentTarget: HTMLSelectElement },
+            ) => {
+              this._selectedUserId = +event.currentTarget.value;
+            }}">
+              <option selected hidden></option>
+              ${this._users.map((user) =>
+                html`
+                  <option value="${user.id}">
+                    @${user.username}: ${user.name}
+                  </option>
+                `
               )}
             </select>
           </label>
@@ -118,11 +113,10 @@ export class AppElement extends LitElement {
         : null} ${this._posts
         ? html`
           <ul>
-            ${this._posts.map(
-              (post) =>
-                html`
-                  <li>${post.title}</li>
-                `,
+            ${this._posts.map((post) =>
+              html`
+                <li>${post.title}</li>
+              `
             )}
           </ul>
         `
@@ -130,7 +124,7 @@ export class AppElement extends LitElement {
         ? html`
           <p>Loading Posts...</p>
         `
-        : this._users
+        : this._users !== undefined
         ? html`
           <p>Select User to view posts</p>
         `
