@@ -1,13 +1,14 @@
 /** @jsxImportSource preact */
 
 import {
+  batch,
   type ReadonlySignal,
   useSignal,
   useSignalEffect,
 } from "@preact/signals";
-import { render } from "preact";
-import type { User } from "jsonplaceholder-types/types/user";
 import type { Post } from "jsonplaceholder-types/types/post";
+import type { User } from "jsonplaceholder-types/types/user";
+import { render } from "preact";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 
@@ -15,24 +16,26 @@ function useUsers() {
   const users = useSignal<User[] | undefined>(undefined);
   const loading = useSignal(false);
 
-  useSignalEffect(function fetchUsers() {
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
-
+  async function fetchUsers(signal: AbortSignal) {
     loading.value = true;
-    fetch(`${urlBase}/users`, { signal })
-      .then(async (response) => {
-        const data = await response.json();
-        if (signal.aborted) return;
+    try {
+      const response = await fetch(`${urlBase}/users`, { signal });
+      const data = await response.json() as User[];
+      signal.throwIfAborted();
+      batch(() => {
         users.value = data;
-      })
-      .catch((error) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          throw error;
-        }
-      })
-      .finally(() => loading.value = false);
+        loading.value = false;
+      });
+    } catch (error) {
+      if (signal.aborted) return;
+      loading.value = false;
+      throw error;
+    }
+  }
 
+  useSignalEffect(function updateUsers() {
+    const ctrl = new AbortController();
+    fetchUsers(ctrl.signal);
     return () => ctrl.abort();
   });
 
@@ -43,25 +46,30 @@ function usePosts(userId: ReadonlySignal<number | undefined>) {
   const posts = useSignal<Post[] | undefined>(undefined);
   const loading = useSignal(false);
 
-  useSignalEffect(function fetchPosts() {
-    if (userId.value === undefined) return;
-
-    const ctrl = new AbortController();
-    const signal = ctrl.signal;
+  async function fetchPosts(userId: number, signal: AbortSignal) {
     loading.value = true;
-    fetch(`${urlBase}/posts?userId=${userId.value}`, { signal })
-      .then(async (response) => {
-        const data = await response.json();
-        if (signal.aborted) return;
+    try {
+      const response = await fetch(
+        `${urlBase}/posts?userId=${userId}`,
+        { signal },
+      );
+      const data = await response.json() as Post[];
+      signal.throwIfAborted();
+      batch(() => {
         posts.value = data;
-      })
-      .catch((error) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          throw error;
-        }
-      })
-      .finally(() => loading.value = false);
+        loading.value = false;
+      });
+    } catch (error) {
+      if (signal.aborted) return;
+      loading.value = false;
+      throw error;
+    }
+  }
 
+  useSignalEffect(function updatePosts() {
+    if (userId.value === undefined) return;
+    const ctrl = new AbortController();
+    fetchPosts(userId.value, ctrl.signal);
     return () => ctrl.abort();
   });
 
@@ -80,8 +88,9 @@ function App() {
             <label>
               Select User:
               <select
-                onChange={(event) =>
-                  selectedUserId.value = +event.currentTarget.value}
+                onChange={function handleChange(event) {
+                  selectedUserId.value = +event.currentTarget.value;
+                }}
               >
                 <option hidden selected></option>
                 {users.value.map((user) => (
