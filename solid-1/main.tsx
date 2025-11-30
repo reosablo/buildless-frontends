@@ -30,15 +30,16 @@ function createPostsResource(userId: Accessor<number | undefined>) {
     async function fetchPosts(userId) {
       const ctrl = new AbortController();
       onCleanup(() => ctrl.abort());
-      const response = await fetch(`${urlBase}/posts?userId=${userId}`, {
-        signal: ctrl.signal,
-      });
+      const response = await fetch(
+        `${urlBase}/posts?userId=${userId}`,
+        { signal: ctrl.signal },
+      );
       return await response.json() as Post[];
     },
   );
 }
 
-const App = () => {
+function App() {
   const [selectedUserId, setSelectedUserId] = createSignal<number>();
   const [users] = createUsersResource();
   const [posts] = createPostsResource(selectedUserId);
@@ -52,8 +53,11 @@ const App = () => {
             <label>
               Select User:
               <select
-                onChange={(e) => setSelectedUserId(+e.currentTarget.value)}
+                onChange={function handleChange(event) {
+                  setSelectedUserId(+event.currentTarget.value);
+                }}
               >
+                <option hidden selected></option>
                 <For each={users()}>
                   {(user) => (
                     <option value={user.id}>
@@ -94,6 +98,6 @@ const App = () => {
       </p>
     </>
   );
-};
+}
 
 render(() => <App />, document.body);
