@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buildless SolidJS 1 app</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "@solidjs/signals": "https://esm.sh/*@solidjs/signals@0.11.1?dev",
+          "@solidjs/web": "https://esm.sh/*@solidjs/web@2.0.0-beta.0?dev",
+          "solid-js": "https://esm.sh/*solid-js@2.0.0-beta.0?dev",
+          "solid-js/": "https://esm.sh/*solid-js@2.0.0-beta.0&dev/"
+        }
+      }
+    </script>
+    <script type="module">
+      import {
+        availablePresets,
+        registerPreset,
+      } from "https://esm.sh/@babel/standalone@7.28.1";
+      import presetSolid from "https://esm.sh/babel-preset-solid@2.0.0-beta.0";
+
+      registerPreset("solid", {
+        presets: [presetSolid],
+      });
+    </script>
+    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script
+      type="text/babel"
+      data-presets="solid,typescript"
+      data-plugins=""
+      data-type="module"
+      src="./main.tsx"
+    ></script>
+  </head>
+  <body></body>
+</html>

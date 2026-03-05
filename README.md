@@ -11,5 +11,6 @@ steps.
 * [Preact 10](./preact-10/)
 * [Remix 3](./remix-3/)
 * [Solid 1](./solid-1/)
+* [Solid 2](./solid-2/)
 * [Svelte 5](./svelte-5/)
 * [Vue 3](./vue-3/)
