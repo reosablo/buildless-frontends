@@ -1,9 +1,12 @@
 /** @jsxImportSource hono/jsx */
+// deno-lint-ignore-file no-import-prefix
 
 import { useEffect, useState } from "hono/jsx";
 import { createRoot } from "hono/jsx/dom/client";
-import type { Post } from "jsonplaceholder-types/types/post";
-import type { User } from "jsonplaceholder-types/types/user";
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 

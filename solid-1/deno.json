@@ -2,5 +2,9 @@
   "imports": {
     "solid-js": "https://esm.sh/*solid-js@1.9.10?dev",
     "solid-js/": "https://esm.sh/*solid-js@1.9.10&dev/"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

@@ -1,7 +1,9 @@
 <script lang="ts">
   /// <reference types="svelte" />
-  import type { Post } from "jsonplaceholder-types/types/post";
-  import type { User } from "jsonplaceholder-types/types/user";
+  import type {
+    Post,
+    User,
+  } from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 
   const urlBase = "https://jsonplaceholder.typicode.com";
 

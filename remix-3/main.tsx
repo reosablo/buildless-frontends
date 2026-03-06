@@ -1,8 +1,11 @@
 /** @jsxImportSource remix/component */
+// deno-lint-ignore-file no-import-prefix
 
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { createRoot, type Handle } from "remix/component";
-import type { Post } from "jsonplaceholder-types/types/post";
-import type { User } from "jsonplaceholder-types/types/user";
 
 function App(handle: Handle) {
   const urlBase = "https://jsonplaceholder.typicode.com";

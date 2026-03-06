@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-import-prefix
+
 import "@angular/compiler";
 
 import { httpResource } from "@angular/common/http";
@@ -11,8 +13,10 @@ import {
 } from "@angular/core";
 import { Field, form } from "@angular/forms/signals";
 import { bootstrapApplication } from "@angular/platform-browser";
-import type { User } from "jsonplaceholder-types/types/user";
-import type { Post } from "jsonplaceholder-types/types/post";
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 

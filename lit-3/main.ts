@@ -1,5 +1,9 @@
-import type { Post } from "jsonplaceholder-types/types/post";
-import type { User } from "jsonplaceholder-types/types/user";
+// deno-lint-ignore-file no-import-prefix
+
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
 

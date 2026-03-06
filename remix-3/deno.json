@@ -5,5 +5,9 @@
     "@remix-run/interaction": "https://esm.sh/*@remix-run/interaction@0.5.0?dev",
     "@remix-run/interaction/": "https://esm.sh/*@remix-run/interaction@0.5.0&dev/",
     "remix/": "https://esm.sh/*remix@3.0.0-alpha.2&dev/"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

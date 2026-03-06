@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-import-prefix
+
 import "@angular/compiler";
 import "zone.js";
 
@@ -11,8 +13,10 @@ import {
 } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { bootstrapApplication } from "@angular/platform-browser";
-import type { Post } from "jsonplaceholder-types/types/post";
-import type { User } from "jsonplaceholder-types/types/user";
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import {
   BehaviorSubject,
   distinctUntilChanged,

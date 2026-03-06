@@ -1,5 +1,9 @@
 {
   "imports": {
     "hono/": "https://esm.sh/*hono@4.10.4&dev/"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

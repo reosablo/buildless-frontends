@@ -18,5 +18,9 @@
     "svelte": "https://esm.sh/*svelte@5.43.6?dev",
     "svelte/": "https://esm.sh/*svelte@5.43.6&dev/",
     "zimmerframe": "https://esm.sh/*zimmerframe@1.1.4?dev"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

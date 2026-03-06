@@ -1,8 +1,11 @@
 /** @jsxImportSource solid-js */
+// deno-lint-ignore-file no-import-prefix
 
 import { render } from "@solidjs/web";
-import type { Post } from "jsonplaceholder-types/types/post";
-import type { User } from "jsonplaceholder-types/types/user";
+import type {
+  Post,
+  User,
+} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import {
   createMemo,
   createSignal,

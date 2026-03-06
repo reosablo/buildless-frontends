@@ -4,5 +4,9 @@
     "@solidjs/web": "https://esm.sh/*@solidjs/web@2.0.0-beta.0?dev",
     "solid-js": "https://esm.sh/*solid-js@2.0.0-beta.0?dev",
     "solid-js/": "https://esm.sh/*solid-js@2.0.0-beta.0&dev/"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

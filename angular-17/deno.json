@@ -13,6 +13,8 @@
     "tslib": "https://esm.sh/*tslib@^2.3.0?dev"
   },
   "compilerOptions": {
-    "experimentalDecorators": true
+    "erasableSyntaxOnly": true,
+    "experimentalDecorators": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }

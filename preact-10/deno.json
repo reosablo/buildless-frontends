@@ -4,5 +4,9 @@
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.12.1?dev",
     "preact": "https://esm.sh/*preact@10.27.2?dev",
     "preact/": "https://esm.sh/*preact@10.27.2&dev/"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
   }
 }
