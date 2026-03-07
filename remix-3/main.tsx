@@ -12,6 +12,7 @@ function App(handle: Handle) {
 
   let users: User[] | undefined;
   let posts: Post[] | undefined;
+  let readmeHTML: string | undefined;
   let loadingUsers = false;
   let loadingPosts = false;
 
@@ -53,17 +54,35 @@ function App(handle: Handle) {
     }
   };
 
+  const fetchReadmeHTML = async (signal: AbortSignal) => {
+    try {
+      const [{ marked }, readmeMarkdown] = await Promise.all([
+        import("https://esm.sh/*marked@17.0.0"),
+        fetch("./README.md", { signal }).then((res) => res.text()),
+      ]);
+      const html = await marked(readmeMarkdown);
+      signal.throwIfAborted();
+      readmeHTML = html;
+      handle.update();
+    } catch (error) {
+      if (signal.aborted) return;
+      handle.update();
+      throw error;
+    }
+  };
+
   const selectUserId = (userId: number, signal: AbortSignal) => {
     fetchPosts(userId, signal);
   };
 
   handle.queueTask(() => {
     fetchUsers(handle.signal);
+    fetchReadmeHTML(handle.signal);
   });
 
   return () => (
     <>
-      <h1>Buildless Remix 3 app</h1>
+      <section innerHTML={readmeHTML}></section>
       {(users !== undefined && (
         <label>
           Select User:
