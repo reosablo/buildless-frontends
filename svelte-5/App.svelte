@@ -16,6 +16,7 @@
     value?: Post[];
     loading: boolean;
   }>({ loading: false });
+  let readmeHTML = $state<string | undefined>(undefined);
 
   async function fetchUsers(signal: AbortSignal) {
     users.loading = true;
@@ -47,6 +48,19 @@
     }
   }
 
+  async function fetchReadmeHTML(signal: AbortSignal) {
+    try {
+      const [{ marked }, readmeMarkdown] = await Promise.all([
+        import("https://esm.sh/*marked@17.0.0"),
+        fetch("./README.md", { signal }).then((res) => res.text()),
+      ]);
+      readmeHTML = marked(readmeMarkdown);
+    } catch (error) {
+      if (signal.aborted) return;
+      throw error;
+    }
+  }
+
   $effect(function updateUsers() {
     const ctrl = new AbortController();
     fetchUsers(ctrl.signal);
@@ -59,9 +73,15 @@
     fetchPosts(selectedUserId, ctrl.signal);
     return () => ctrl.abort();
   });
+
+  $effect(function updateReadmeHTML() {
+    const ctrl = new AbortController();
+    fetchReadmeHTML(ctrl.signal);
+    return () => ctrl.abort();
+  });
 </script>
 
-<h1>Buildless Svelte 5 app</h1>
+<section>{@html readmeHTML}</section>
 
 {#if users.value}
   <label>
