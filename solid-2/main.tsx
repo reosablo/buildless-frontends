@@ -36,6 +36,16 @@ async function fetchPosts(userId: number) {
   return await response.json() as Post[];
 }
 
+async function fetchReadmeHTML() {
+  const ctrl = new AbortController();
+  onCleanup(() => ctrl.abort());
+  const [{ marked }, readmeMarkdown] = await Promise.all([
+    import("https://esm.sh/*marked@17.0.0"),
+    fetch("./README.md", { signal: ctrl.signal }).then((res) => res.text()),
+  ]);
+  return marked(readmeMarkdown);
+}
+
 function App() {
   const [selectedUserId, setSelectedUserId] = createSignal<number>();
   const users = createMemo(() => fetchUsers());
@@ -43,10 +53,11 @@ function App() {
     const userId = selectedUserId();
     return userId !== undefined ? fetchPosts(userId) : [];
   });
+  const readmeHTML = createMemo(() => fetchReadmeHTML());
 
   return (
     <>
-      <h1>Buildless SolidJS 2 app</h1>
+      <section innerHTML={readmeHTML()}></section>
       <Loading fallback={<p>Loading Users...</p>}>
         <label>
           Select User:
