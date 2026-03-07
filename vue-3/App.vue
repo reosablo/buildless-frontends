@@ -16,6 +16,7 @@ const users = reactive<{
   value?: User[];
   loading: boolean;
 }>({ loading: false });
+const readmeHTML = ref<string | undefined>(undefined);
 
 async function fetchUsers(signal: AbortSignal) {
   users.loading = true;
@@ -49,6 +50,21 @@ async function fetchPosts(userId: number, signal: AbortSignal) {
   }
 }
 
+async function fetchReadme(signal: AbortSignal) {
+  try {
+    const [{ marked }, readmeMarkdown] = await Promise.all([
+      import("https://esm.sh/*marked@17.0.0"),
+      fetch("./README.md", { signal }).then((res) => res.text()),
+    ]);
+    const html = await marked.parse(readmeMarkdown);
+    signal.throwIfAborted();
+    readmeHTML.value = html;
+  } catch (error) {
+    if (signal.aborted) return;
+    throw error;
+  }
+}
+
 watchEffect(function updateUsers() {
   const ctrl = new AbortController();
   onWatcherCleanup(() => ctrl.abort());
@@ -61,10 +77,16 @@ watchEffect(function updatePosts() {
   onWatcherCleanup(() => ctrl.abort());
   fetchPosts(selectedUserId.value, ctrl.signal);
 });
+
+watchEffect(function updateReadme() {
+  const ctrl = new AbortController();
+  onWatcherCleanup(() => ctrl.abort());
+  fetchReadme(ctrl.signal);
+});
 </script>
 
 <template>
-  <h1>Buildless Vue 3 app</h1>
+  <section v-html="readmeHTML"></section>
   <label v-if="users.value">
     Select User:
     <select v-model.number="selectedUserId">
