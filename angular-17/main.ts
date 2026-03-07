@@ -19,6 +19,7 @@ import type {
 } from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import {
   BehaviorSubject,
+  combineLatest,
   distinctUntilChanged,
   filter,
   map,
@@ -51,13 +52,27 @@ class PostService {
   }
 }
 
+@Injectable({ providedIn: "root" })
+class ReadmeService {
+  readonly #httpClient = inject(HttpClient);
+
+  getReadmeHTML() {
+    return combineLatest([
+      import("https://esm.sh/*marked@17.0.0"),
+      this.#httpClient.get("./README.md", { responseType: "text" }),
+    ]).pipe(
+      switchMap(async ([{ marked }, readmeText]) => await marked(readmeText)),
+    );
+  }
+}
+
 @Component({
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: "app-root",
   imports: [AsyncPipe, ReactiveFormsModule],
   template: `
-    <h1>Buildless Angular 17 app</h1>
+    <section [innerHTML]="readmeHTML$ | async"></section>
     @if (users$ | async; as users) {
       <label>
         Select User:
@@ -98,6 +113,7 @@ class AppComponent {
   protected readonly posts$ = this.#getPosts(this.#getSelectedUserId());
   protected readonly loadingUsers$ = new BehaviorSubject(false);
   protected readonly loadingPosts$ = new BehaviorSubject(false);
+  protected readonly readmeHTML$ = inject(ReadmeService).getReadmeHTML();
 
   #getSelectedUserId() {
     return this.formControl.valueChanges.pipe(
