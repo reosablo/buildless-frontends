@@ -79,14 +79,45 @@ function usePosts(userId: ReadonlySignal<number | undefined>) {
   return [posts, { loading }] as const;
 }
 
+function useReadmeHTML() {
+  const readmeHTML = useSignal<string | undefined>(undefined);
+
+  async function fetchReadmeHTML(signal: AbortSignal) {
+    try {
+      const [{ marked }, readmeMarkdown] = await Promise.all([
+        import("https://esm.sh/*marked@17.0.0"),
+        fetch("./README.md", { signal }).then((res) => res.text()),
+      ]);
+      const html = await marked.parse(readmeMarkdown);
+      signal.throwIfAborted();
+      readmeHTML.value = html;
+    } catch (error) {
+      if (signal.aborted) return;
+      throw error;
+    }
+  }
+
+  useSignalEffect(function updateReadmeHTML() {
+    const ctrl = new AbortController();
+    fetchReadmeHTML(ctrl.signal);
+    return () => ctrl.abort();
+  });
+
+  return [readmeHTML] as const;
+}
+
 function App() {
   const selectedUserId = useSignal<number | undefined>(undefined);
   const [users, { loading: loadingUsers }] = useUsers();
   const [posts, { loading: loadingPosts }] = usePosts(selectedUserId);
+  const [readmeHTML] = useReadmeHTML();
 
   return (
     <>
-      <h1>Buildless Preact 10 app</h1>
+      <section
+        dangerouslySetInnerHTML={{ __html: readmeHTML.value ?? "" }}
+      >
+      </section>
       {users.value !== undefined && (
             <label>
               Select User:
