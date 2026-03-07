@@ -2,12 +2,13 @@
 
 import "@angular/compiler";
 
-import { httpResource } from "@angular/common/http";
+import { HttpClient, httpResource } from "@angular/common/http";
 import {
   Component,
   computed,
   inject,
   Injectable,
+  resource,
   type Signal,
   signal,
 } from "@angular/core";
@@ -17,6 +18,7 @@ import type {
   Post,
   User,
 } from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
+import { firstValueFrom, fromEvent, takeUntil } from "rxjs";
 
 const urlBase = "https://jsonplaceholder.typicode.com";
 
@@ -41,11 +43,32 @@ class PostService {
   }
 }
 
+@Injectable({ providedIn: "root" })
+class ReadmeService {
+  getReadmeHTML() {
+    const httpClient = inject(HttpClient);
+
+    return resource({
+      loader: async ({ abortSignal }) => {
+        const [{ marked }, readmeMarkdown] = await Promise.all([
+          import("https://esm.sh/*marked@17.0.0"),
+          firstValueFrom(
+            httpClient
+              .get("./README.md", { responseType: "text" })
+              .pipe(takeUntil(fromEvent(abortSignal, "abort"))),
+          ),
+        ]);
+        return marked.parse(readmeMarkdown);
+      },
+    });
+  }
+}
+
 @Component({
   selector: "app-root",
   imports: [Field],
   template: `
-    <h1>Buildless Angular 21 app</h1>
+    <section [innerHTML]="readmeHTML.value()"></section>
     @if (users.hasValue()) {
       <label>
         Select User:
@@ -93,6 +116,7 @@ class App {
   protected readonly posts = inject(PostService).getPosts(
     this.#selectedUserId,
   );
+  protected readonly readmeHTML = inject(ReadmeService).getReadmeHTML();
 }
 
 await bootstrapApplication(App);
