@@ -42,14 +42,27 @@ function createPostsResource(userId: Accessor<number | undefined>) {
   );
 }
 
+function createReadmeResource() {
+  return createResource(async function fetchReadme() {
+    const ctrl = new AbortController();
+    onCleanup(() => ctrl.abort());
+    const [{ marked }, readmeMarkdown] = await Promise.all([
+      import("https://esm.sh/*marked@17.0.0"),
+      fetch("./README.md", { signal: ctrl.signal }).then((res) => res.text()),
+    ]);
+    return marked(readmeMarkdown);
+  });
+}
+
 function App() {
   const [selectedUserId, setSelectedUserId] = createSignal<number>();
   const [users] = createUsersResource();
   const [posts] = createPostsResource(selectedUserId);
+  const [readmeHTML] = createReadmeResource();
 
   return (
     <>
-      <h1>Buildless SolidJS 1 app</h1>
+      <section innerHTML={readmeHTML()}></section>
       <Switch>
         <Match when={users()}>
           {(users) => (
