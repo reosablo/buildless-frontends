@@ -6,6 +6,7 @@ import type {
 } from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 @customElement("app-root")
 export class AppElement extends LitElement {
@@ -24,18 +25,24 @@ export class AppElement extends LitElement {
   @state()
   private accessor _loadingPosts = false;
 
+  @state()
+  private accessor _readmeHTML: string | undefined;
+
   #usersController?: AbortController;
   #postsController?: AbortController;
+  #readmeController?: AbortController;
 
   override connectedCallback() {
     super.connectedCallback();
     this.#fetchUsers();
+    this.#fetchReadmeHTML();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.#usersController?.abort();
     this.#postsController?.abort();
+    this.#readmeController?.abort();
   }
 
   override updated(changed: Map<string, unknown>) {
@@ -87,9 +94,28 @@ export class AppElement extends LitElement {
     }
   }
 
+  async #fetchReadmeHTML() {
+    this.#readmeController?.abort();
+    const ctrl = this.#readmeController = new AbortController();
+    try {
+      const [{ marked }, readmeMarkdown] = await Promise.all([
+        import("https://esm.sh/*marked@17.0.0"),
+        fetch("./README.md", { signal: ctrl.signal }).then((res) => res.text()),
+      ]);
+      const readmeHTML = await marked(readmeMarkdown);
+      ctrl.signal.throwIfAborted();
+      this._readmeHTML = readmeHTML;
+    } catch (error) {
+      if (ctrl.signal.aborted) return;
+      throw error;
+    }
+  }
+
   override render() {
     return html`
-      <h1>Buildless Lit 3 app</h1>
+      <section>
+        ${unsafeHTML(this._readmeHTML ?? "")}
+      </section>
       ${this._users
         ? html`
           <label>
