@@ -70,16 +70,44 @@ function usePosts(userId: number | undefined) {
   return [posts, { loading }] as const;
 }
 
+function useReadmeHTML() {
+  const [readmeHTML, setReadmeHTML] = useState<string | undefined>(undefined);
+
+  async function fetchReadmeHTML(signal: AbortSignal) {
+    try {
+      const [{ marked }, readmeMarkdown] = await Promise.all([
+        import("https://esm.sh/*marked@17.0.0"),
+        fetch("./README.md", { signal }).then((res) => res.text()),
+      ]);
+      const readmeHTML = await marked(readmeMarkdown);
+      signal.throwIfAborted();
+      setReadmeHTML(readmeHTML);
+    } catch (error) {
+      if (signal.aborted) return;
+      throw error;
+    }
+  }
+
+  useEffect(function updateReadme() {
+    const ctrl = new AbortController();
+    fetchReadmeHTML(ctrl.signal);
+    return () => ctrl.abort();
+  }, []);
+
+  return [readmeHTML] as const;
+}
+
 function App() {
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(
     undefined,
   );
   const [users, { loading: loadingUsers }] = useUsers();
   const [posts, { loading: loadingPosts }] = usePosts(selectedUserId);
+  const [readmeHTML] = useReadmeHTML();
 
   return (
     <>
-      <h1>Buildless Hono 4 app</h1>
+      <section dangerouslySetInnerHTML={{ __html: readmeHTML ?? "" }}></section>
       {users !== undefined && (
             <label>
               Select User:
