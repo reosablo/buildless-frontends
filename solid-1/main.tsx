@@ -1,117 +1,102 @@
 /** @jsxImportSource solid-js */
-// deno-lint-ignore-file no-import-prefix
 
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import {
   type Accessor,
+  createEffect,
   createResource,
   createSignal,
   For,
-  Match,
   onCleanup,
-  Switch,
 } from "solid-js";
 import { render } from "solid-js/web";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-const urlBase = "https://jsonplaceholder.typicode.com";
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.tsx": { lang: "tsx" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
-function createUsersResource() {
-  return createResource(async function fetchUsers() {
-    const ctrl = new AbortController();
-    onCleanup(() => ctrl.abort());
-    const response = await fetch(`${urlBase}/users`, { signal: ctrl.signal });
-    return await response.json() as User[];
-  });
-}
-
-function createPostsResource(userId: Accessor<number | undefined>) {
+function createSourceHTMLResource(url: Accessor<keyof typeof sources>) {
   return createResource(
-    userId,
-    async function fetchPosts(userId) {
+    url,
+    async function updateSourceHTML(url) {
       const ctrl = new AbortController();
       onCleanup(() => ctrl.abort());
-      const response = await fetch(
-        `${urlBase}/posts?userId=${userId}`,
-        { signal: ctrl.signal },
-      );
-      return await response.json() as Post[];
+      return await fetchSourceHTML(url, sources[url].lang, ctrl.signal);
     },
   );
 }
 
-function createReadmeResource() {
-  return createResource(async function fetchReadme() {
-    const ctrl = new AbortController();
-    onCleanup(() => ctrl.abort());
-    const [{ marked }, readmeMarkdown] = await Promise.all([
-      import("https://esm.sh/*marked@17.0.0"),
-      fetch("./README.md", { signal: ctrl.signal }).then((res) => res.text()),
-    ]);
-    return marked(readmeMarkdown);
-  });
+function createReadmeHTMLResource() {
+  return createResource(
+    async function updateReadmeHTML() {
+      const ctrl = new AbortController();
+      onCleanup(() => ctrl.abort());
+      return await fetchReadmeHTML(ctrl.signal);
+    },
+  );
 }
 
-function App() {
-  const [selectedUserId, setSelectedUserId] = createSignal<number>();
-  const [users] = createUsersResource();
-  const [posts] = createPostsResource(selectedUserId);
-  const [readmeHTML] = createReadmeResource();
+function SourceView(
+  props: {
+    url: keyof typeof sources;
+    onLoadingChange?: (loading: boolean) => void;
+  },
+) {
+  const [sourceHTML] = createSourceHTMLResource(() => props.url);
+
+  createEffect(() => {
+    props.onLoadingChange?.(sourceHTML.loading);
+  });
+
+  return <section innerHTML={sourceHTML()}></section>;
+}
+
+function SourcesView() {
+  const [selectedSourceUrl, setSelectedSourceUrl] = createSignal<
+    keyof typeof sources
+  >("./index.html");
+  const [loading, setLoading] = createSignal(false);
 
   return (
     <>
-      <section innerHTML={readmeHTML()}></section>
-      <Switch>
-        <Match when={users()}>
-          {(users) => (
-            <label>
-              Select User:
-              <select
-                onChange={function handleChange(event) {
-                  setSelectedUserId(+event.currentTarget.value);
-                }}
-              >
-                <option hidden selected></option>
-                <For each={users()}>
-                  {(user) => (
-                    <option value={user.id}>
-                      @{user.username}: {user.name}
-                    </option>
-                  )}
-                </For>
-              </select>
-            </label>
-          )}
-        </Match>
-        <Match when={users.loading}>
-          <p>Loading Users...</p>
-        </Match>
-      </Switch>
-      <Switch>
-        <Match when={posts()}>
-          {(posts) => (
-            <ul>
-              <For each={posts()}>
-                {(post) => <li>{post.title}</li>}
-              </For>
-            </ul>
-          )}
-        </Match>
-        <Match when={posts.loading}>
-          <p>Loading Posts...</p>
-        </Match>
-        <Match when={users()}>
-          <p>Select User to view posts</p>
-        </Match>
-      </Switch>
-      <p>
-        Data Source:
-        <a href="https://jsonplaceholder.typicode.com/" target="_blank">
-          JSONPlaceholder
-        </a>
-      </p>
+      <label>
+        Source:
+        <select
+          onChange={function handleChange(event) {
+            setSelectedSourceUrl(
+              event.currentTarget.value as keyof typeof sources,
+            );
+          }}
+        >
+          <For each={Object.keys(sources)}>
+            {(source) => <option value={source}>{source}</option>}
+          </For>
+        </select>
+      </label>
+      {loading() && <progress />}
+      <SourceView
+        url={selectedSourceUrl()}
+        onLoadingChange={function handleOnLoadingChange(loading) {
+          setLoading(loading);
+        }}
+      />
+    </>
+  );
+}
+
+function ReadmeView() {
+  const [readmeHTML] = createReadmeHTMLResource();
+
+  return <section innerHTML={readmeHTML()}></section>;
+}
+
+function App() {
+  return (
+    <>
+      <ReadmeView />
+      <SourcesView />
     </>
   );
 }
