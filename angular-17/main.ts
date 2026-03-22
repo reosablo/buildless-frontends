@@ -1,157 +1,158 @@
-// deno-lint-ignore-file no-import-prefix
-
 import "@angular/compiler";
 import "zone.js";
 
 import { AsyncPipe } from "@angular/common";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
 import {
   ChangeDetectionStrategy,
   Component,
+  EventEmitter,
   inject,
   Injectable,
+  Input,
+  Output,
 } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
-import { bootstrapApplication } from "@angular/platform-browser";
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
+import { bootstrapApplication, DomSanitizer } from "@angular/platform-browser";
 import {
   BehaviorSubject,
-  combineLatest,
-  distinctUntilChanged,
   filter,
+  finalize,
+  from,
   map,
-  type Observable,
-  share,
   startWith,
   switchMap,
   tap,
 } from "rxjs";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-const urlBase = "https://jsonplaceholder.typicode.com";
-
-@Injectable({ providedIn: "root" })
-class UserService {
-  readonly #httpClient = inject(HttpClient);
-
-  getUsers() {
-    return this.#httpClient.get<User[]>(`${urlBase}/users`);
-  }
-}
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.ts": { lang: "typescript" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
 @Injectable({ providedIn: "root" })
-class PostService {
-  readonly #httpClient = inject(HttpClient);
+class SourceService {
+  readonly #domSanitizer = inject(DomSanitizer);
 
-  getPosts(userId: number) {
-    return this.#httpClient.get<Post[]>(`${urlBase}/posts`, {
-      params: { userId },
-    });
+  getSourceHTML(url: keyof typeof sources) {
+    const ctrl = new AbortController();
+
+    return from(fetchSourceHTML(url, sources[url].lang, ctrl.signal))
+      .pipe(
+        finalize(() => ctrl.abort()),
+        map((html) => this.#domSanitizer.bypassSecurityTrustHtml(html)),
+      );
   }
 }
 
 @Injectable({ providedIn: "root" })
 class ReadmeService {
-  readonly #httpClient = inject(HttpClient);
-
   getReadmeHTML() {
-    return combineLatest([
-      import("https://esm.sh/*marked@17.0.0"),
-      this.#httpClient.get("./README.md", { responseType: "text" }),
-    ]).pipe(
-      switchMap(async ([{ marked }, readmeText]) => await marked(readmeText)),
-    );
+    const ctrl = new AbortController();
+
+    return from(fetchReadmeHTML(ctrl.signal))
+      .pipe(finalize(() => ctrl.abort()));
   }
 }
 
 @Component({
   standalone: true,
+  selector: "app-source",
+  imports: [AsyncPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  selector: "app-root",
-  imports: [AsyncPipe, ReactiveFormsModule],
   template: `
-    <section [innerHTML]="readmeHTML$ | async"></section>
-    @if (users$ | async; as users) {
-      <label>
-        Select User:
-        <select [formControl]="formControl">
-          <option hidden selected></option>
-          @for (user of users; track user.id) {
-            <option value="{{ user.id }}">
-              &#64;{{ user.username }}: {{ user.name }}
-            </option>
-          }
-        </select>
-      </label>
-    } @else if (loadingUsers$ | async) {
-      <p>Loading Users...</p>
-    }
-    @if (posts$ | async; as posts) {
-      <ul>
-        @for (post of posts; track post.id) {
-          <li>{{ post.title }}</li>
-        }
-      </ul>
-    } @else if (loadingPosts$ | async) {
-      <p>Loading Posts...</p>
-    } @else if (!(user$ | async)) {
-      <p>Select User to view posts</p>
-    }
-    <p>
-      Data Source:
-      <a href="https://jsonplaceholder.typicode.com/" target="_blank">
-        JSONPlaceholder
-      </a>
-    </p>
+    <div [innerHTML]="sourceHTML$ | async"></div>
   `,
 })
-class AppComponent {
-  protected readonly formControl = new FormControl("");
-  protected readonly users$ = this.#getUsers();
-  protected readonly posts$ = this.#getPosts(this.#getSelectedUserId());
-  protected readonly loadingUsers$ = new BehaviorSubject(false);
-  protected readonly loadingPosts$ = new BehaviorSubject(false);
-  protected readonly readmeHTML$ = inject(ReadmeService).getReadmeHTML();
-
-  #getSelectedUserId() {
-    return this.formControl.valueChanges.pipe(
-      startWith(this.formControl.value),
-      filter((id) => id !== null),
-      filter((id) => id !== ""),
-      map((id) => +id),
-      share(),
-    );
+class SourceViewComponent {
+  @Input({ required: true })
+  set url(value: keyof typeof sources) {
+    this.#url$.next(value);
   }
 
-  #getUsers() {
-    const userService = inject(UserService);
-    return userService.getUsers()
-      .pipe(
+  @Output()
+  protected readonly loadingChange = new EventEmitter<boolean>();
+
+  readonly #sourceService = inject(SourceService);
+
+  readonly #url$ = new BehaviorSubject<keyof typeof sources | undefined>(
+    undefined,
+  );
+  readonly sourceHTML$ = this.#url$.pipe(
+    filter((url) => url !== undefined),
+    switchMap((url) =>
+      this.#sourceService.getSourceHTML(url).pipe(
         tap({
-          subscribe: () => this.loadingUsers$.next(true),
-          finalize: () => this.loadingUsers$.next(false),
+          subscribe: () => this.loadingChange.emit(true),
+          finalize: () => this.loadingChange.emit(false),
         }),
-        share(),
-      );
-  }
-
-  #getPosts(selectedUserId$: Observable<number>) {
-    const postService = inject(PostService);
-    return selectedUserId$.pipe(
-      distinctUntilChanged(),
-      switchMap((id) =>
-        postService.getPosts(id).pipe(tap({
-          subscribe: () => this.loadingPosts$.next(true),
-          finalize: () => this.loadingPosts$.next(false),
-        }))
-      ),
-      share(),
-    );
-  }
+      )
+    ),
+  );
 }
 
-await bootstrapApplication(AppComponent, {
-  providers: [provideHttpClient()],
-});
+@Component({
+  standalone: true,
+  selector: "app-sources",
+  imports: [AsyncPipe, ReactiveFormsModule, SourceViewComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <label>
+      Source:
+      <select [formControl]="sourceUrlControl">
+        @for (url of sourceUrls; track url) {
+          <option value="{{ url }}">{{ url }}</option>
+        }
+      </select>
+    </label>
+    @if (loading$ | async) {
+      <progress></progress>
+    }
+    <app-source
+      [url]="selectedSourceUrl$ | async"
+      (loadingChange)="loading$.next($event)"
+    />
+  `,
+})
+class SourcesViewComponent {
+  protected readonly sourceUrlControl = new FormControl<keyof typeof sources>(
+    "./index.html",
+  );
+  protected readonly selectedSourceUrl$ = this.sourceUrlControl.valueChanges
+    .pipe(
+      startWith(this.sourceUrlControl.value),
+      filter((url) => url !== null),
+    );
+  protected readonly loading$ = new BehaviorSubject<boolean>(false);
+  protected readonly sourceUrls = Object.keys(
+    sources,
+  ) as (keyof typeof sources)[];
+}
+
+@Component({
+  standalone: true,
+  selector: "app-readme",
+  imports: [AsyncPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section [innerHTML]="readmeHTML$ | async"></section>
+  `,
+})
+class ReadmeViewComponent {
+  protected readonly readmeHTML$ = inject(ReadmeService).getReadmeHTML();
+}
+
+@Component({
+  standalone: true,
+  selector: "app-root",
+  imports: [ReadmeViewComponent, SourcesViewComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <app-readme></app-readme>
+    <app-sources></app-sources>
+  `,
+})
+class AppComponent {}
+
+await bootstrapApplication(AppComponent);
