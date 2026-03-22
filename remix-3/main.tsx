@@ -1,115 +1,111 @@
 /** @jsxImportSource remix/component */
-// deno-lint-ignore-file no-import-prefix
 
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { createRoot, type Handle } from "remix/component";
+import type { TypedEventTarget } from "remix/interaction";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-function App(handle: Handle) {
-  const urlBase = "https://jsonplaceholder.typicode.com";
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.tsx": { lang: "tsx" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
-  let users: User[] | undefined;
-  let posts: Post[] | undefined;
-  let readmeHTML: string | undefined;
-  let loadingUsers = false;
-  let loadingPosts = false;
+function SourceView(
+  handle: Handle,
+  setup?: TypedEventTarget<{ loadingChange: CustomEvent<boolean> }>,
+) {
+  let sourceHTML: string | undefined;
+  let previousUrl: keyof typeof sources | undefined;
+  let abortController: AbortController | undefined;
 
-  const fetchUsers = async (signal: AbortSignal) => {
-    loadingUsers = true;
-    handle.update();
-    try {
-      const response = await fetch(`${urlBase}/users`, { signal });
-      const data = (await response.json()) as User[];
-      signal.throwIfAborted();
-      users = data;
-      loadingUsers = false;
-      handle.update();
-    } catch (error) {
-      if (signal.aborted) return;
-      loadingUsers = false;
-      handle.update();
-      throw error;
-    }
-  };
+  return (props: { url: keyof typeof sources }) => {
+    if (props.url !== previousUrl) {
+      abortController?.abort();
+      const ctrl = abortController = new AbortController();
+      handle.queueTask(async () => {
+        const signal = AbortSignal.any([ctrl.signal, handle.signal]);
+        setup?.dispatchEvent(
+          new CustomEvent("loadingChange", { detail: true }),
+        );
 
-  const fetchPosts = async (userId: number, signal: AbortSignal) => {
-    loadingPosts = true;
-    handle.update();
-    try {
-      const response = await fetch(`${urlBase}/posts?userId=${userId}`, {
-        signal,
+        try {
+          sourceHTML = await fetchSourceHTML(
+            props.url,
+            sources[props.url].lang,
+            signal,
+          );
+          handle.update();
+          setup?.dispatchEvent(
+            new CustomEvent("loadingChange", { detail: false }),
+          );
+        } catch (error) {
+          if (!signal.aborted) throw error;
+        }
       });
-      const data = (await response.json()) as Post[];
-      signal.throwIfAborted();
-      posts = data;
-      loadingPosts = false;
-      handle.update();
-    } catch (error) {
-      if (signal.aborted) return;
-      loadingPosts = false;
-      handle.update();
-      throw error;
     }
-  };
+    previousUrl = props.url;
 
-  const fetchReadmeHTML = async (signal: AbortSignal) => {
-    try {
-      const [{ marked }, readmeMarkdown] = await Promise.all([
-        import("https://esm.sh/*marked@17.0.0"),
-        fetch("./README.md", { signal }).then((res) => res.text()),
-      ]);
-      const html = await marked(readmeMarkdown);
-      signal.throwIfAborted();
-      readmeHTML = html;
+    return <div innerHTML={sourceHTML}></div>;
+  };
+}
+
+function SourcesView(handle: Handle) {
+  const sourceViewEvents = new EventTarget() as NonNullable<
+    Parameters<typeof SourceView>[1]
+  >;
+  let selectedSourceUrl: keyof typeof sources = "./index.html";
+  let sourceLoading = false;
+
+  handle.on(sourceViewEvents, {
+    loadingChange: (event) => {
+      sourceLoading = event.detail;
       handle.update();
-    } catch (error) {
-      if (signal.aborted) return;
-      handle.update();
-      throw error;
-    }
-  };
-
-  const selectUserId = (userId: number, signal: AbortSignal) => {
-    fetchPosts(userId, signal);
-  };
-
-  handle.queueTask(() => {
-    fetchUsers(handle.signal);
-    fetchReadmeHTML(handle.signal);
+    },
   });
 
   return () => (
     <>
-      <section innerHTML={readmeHTML}></section>
-      {(users !== undefined && (
-        <label>
-          Select User:
-          <select
-            on={{
-              change(event, signal) {
-                selectUserId(+event.currentTarget.value, signal);
-              },
-            }}
-          >
-            <option hidden selected></option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                @{user.username}: {user.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )) ||
-        (loadingUsers && <p>Loading Users...</p>)}
-      {(posts !== undefined && (
-        <ul>
-          {posts.map((post) => <li key={post.id}>{post.title}</li>)}
-        </ul>
-      )) ||
-        (loadingPosts && <p>Loading Posts...</p>) ||
-        (users !== undefined && <p>Select User to view posts</p>)}
+      <label>
+        Source:
+        <select
+          on={{
+            change: function handleChange(e) {
+              selectedSourceUrl = e.currentTarget.value as keyof typeof sources;
+              handle.update();
+            },
+          }}
+        >
+          {Object.keys(sources).map((url) => (
+            <option key={url} value={url}>{url}</option>
+          ))}
+        </select>
+      </label>
+      {sourceLoading && <progress />}
+      <SourceView url={selectedSourceUrl} setup={sourceViewEvents} />
+    </>
+  );
+}
+
+function ReadmeView(handle: Handle) {
+  let readmeHTML: string | undefined;
+
+  handle.queueTask(async (signal) => {
+    try {
+      readmeHTML = await fetchReadmeHTML(signal);
+      handle.update();
+    } catch (error) {
+      if (!signal.aborted) throw error;
+    }
+  });
+
+  return () => <div innerHTML={readmeHTML}></div>;
+}
+
+function App() {
+  return () => (
+    <>
+      <ReadmeView />
+      <SourcesView />
     </>
   );
 }
