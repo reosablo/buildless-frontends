@@ -1,5 +1,4 @@
 /** @jsxImportSource preact */
-// deno-lint-ignore-file no-import-prefix
 
 import {
   batch,
@@ -7,147 +6,116 @@ import {
   useSignal,
   useSignalEffect,
 } from "@preact/signals";
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { render } from "preact";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-const urlBase = "https://jsonplaceholder.typicode.com";
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.tsx": { lang: "tsx" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
-function useUsers() {
-  const users = useSignal<User[] | undefined>(undefined);
+function useSourceHTML(url: ReadonlySignal<keyof typeof sources>) {
+  const sourceHTML = useSignal<string | undefined>(undefined);
   const loading = useSignal(false);
 
-  async function fetchUsers(signal: AbortSignal) {
-    loading.value = true;
-    try {
-      const response = await fetch(`${urlBase}/users`, { signal });
-      const data = await response.json() as User[];
-      signal.throwIfAborted();
-      batch(() => {
-        users.value = data;
-        loading.value = false;
-      });
-    } catch (error) {
-      if (signal.aborted) return;
-      loading.value = false;
-      throw error;
-    }
-  }
-
-  useSignalEffect(function updateUsers() {
+  useSignalEffect(function updateSourceHTML() {
     const ctrl = new AbortController();
-    fetchUsers(ctrl.signal);
+    loading.value = true;
+    fetchSourceHTML(url.value, sources[url.value].lang, ctrl.signal)
+      .then((html) => {
+        batch(() => {
+          sourceHTML.value = html;
+          loading.value = false;
+        });
+      }, (error) => {
+        if (ctrl.signal.aborted) return;
+        loading.value = false;
+        throw error;
+      });
     return () => ctrl.abort();
   });
 
-  return [users, { loading }] as const;
-}
-
-function usePosts(userId: ReadonlySignal<number | undefined>) {
-  const posts = useSignal<Post[] | undefined>(undefined);
-  const loading = useSignal(false);
-
-  async function fetchPosts(userId: number, signal: AbortSignal) {
-    loading.value = true;
-    try {
-      const response = await fetch(
-        `${urlBase}/posts?userId=${userId}`,
-        { signal },
-      );
-      const data = await response.json() as Post[];
-      signal.throwIfAborted();
-      batch(() => {
-        posts.value = data;
-        loading.value = false;
-      });
-    } catch (error) {
-      if (signal.aborted) return;
-      loading.value = false;
-      throw error;
-    }
-  }
-
-  useSignalEffect(function updatePosts() {
-    if (userId.value === undefined) return;
-    const ctrl = new AbortController();
-    fetchPosts(userId.value, ctrl.signal);
-    return () => ctrl.abort();
-  });
-
-  return [posts, { loading }] as const;
+  return [sourceHTML, { loading }] as const;
 }
 
 function useReadmeHTML() {
   const readmeHTML = useSignal<string | undefined>(undefined);
 
-  async function fetchReadmeHTML(signal: AbortSignal) {
-    try {
-      const [{ marked }, readmeMarkdown] = await Promise.all([
-        import("https://esm.sh/*marked@17.0.0"),
-        fetch("./README.md", { signal }).then((res) => res.text()),
-      ]);
-      const html = await marked.parse(readmeMarkdown);
-      signal.throwIfAborted();
-      readmeHTML.value = html;
-    } catch (error) {
-      if (signal.aborted) return;
-      throw error;
-    }
-  }
-
   useSignalEffect(function updateReadmeHTML() {
     const ctrl = new AbortController();
-    fetchReadmeHTML(ctrl.signal);
+    fetchReadmeHTML(ctrl.signal)
+      .then((html) => {
+        readmeHTML.value = html;
+      }, (error) => {
+        if (!ctrl.signal.aborted) throw error;
+      });
     return () => ctrl.abort();
   });
 
   return [readmeHTML] as const;
 }
 
-function App() {
-  const selectedUserId = useSignal<number | undefined>(undefined);
-  const [users, { loading: loadingUsers }] = useUsers();
-  const [posts, { loading: loadingPosts }] = usePosts(selectedUserId);
-  const [readmeHTML] = useReadmeHTML();
+function SourceView(
+  props: {
+    url: ReadonlySignal<keyof typeof sources>;
+    onLoadingChange?: (event: boolean) => void;
+  },
+) {
+  const [sourceHTML, { loading }] = useSourceHTML(props.url);
+
+  useSignalEffect(() => {
+    props.onLoadingChange?.(loading.value);
+  });
+
+  return (
+    <div dangerouslySetInnerHTML={{ __html: sourceHTML.value ?? "" }}></div>
+  );
+}
+
+function SourcesView() {
+  const selectedSourceUrl = useSignal<keyof typeof sources>("./index.html");
+  const loading = useSignal(false);
 
   return (
     <>
-      <section
-        dangerouslySetInnerHTML={{ __html: readmeHTML.value ?? "" }}
-      >
-      </section>
-      {users.value !== undefined && (
-            <label>
-              Select User:
-              <select
-                onChange={function handleChange(event) {
-                  selectedUserId.value = +event.currentTarget.value;
-                }}
-              >
-                <option hidden selected></option>
-                {users.value.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    @{user.username}: {user.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) || loadingUsers.value && <p>Loading Users...</p>}
-      {posts.value !== undefined && (
-            <ul>
-              {posts.value.map((post) => <li key={post.id}>{post.title}</li>)}
-            </ul>
-          ) ||
-        loadingPosts.value && <p>Loading Posts...</p> ||
-        users.value !== undefined && <p>Select User to view posts</p>}
-      <p>
-        Data Source:
-        <a href="https://jsonplaceholder.typicode.com/" target="_blank">
-          JSONPlaceholder
-        </a>
-      </p>
+      <label>
+        Source:
+        <select
+          onChange={function handleChange(event) {
+            selectedSourceUrl.value = (event.currentTarget as HTMLSelectElement)
+              .value as keyof typeof sources;
+          }}
+        >
+          {Object.keys(sources).map((url) => (
+            <option key={url} value={url}>{url}</option>
+          ))}
+        </select>
+      </label>
+      {loading.value && <progress />}
+      <SourceView
+        url={selectedSourceUrl}
+        onLoadingChange={function handleLoadingChange(value) {
+          loading.value = value;
+        }}
+      />
+    </>
+  );
+}
+
+function ReadmeView() {
+  const [readmeHTML] = useReadmeHTML();
+
+  return (
+    <div dangerouslySetInnerHTML={{ __html: readmeHTML.value ?? "" }}></div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <ReadmeView />
+      <SourcesView />
     </>
   );
 }
