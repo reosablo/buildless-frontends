@@ -1,44 +1,41 @@
-// deno-lint-ignore-file no-import-prefix
-
 import "@angular/compiler";
 
-import { HttpClient, httpResource } from "@angular/common/http";
 import {
   Component,
   computed,
+  effect,
+  EventEmitter,
   inject,
   Injectable,
+  Input,
+  linkedSignal,
+  Output,
   resource,
   type Signal,
   signal,
 } from "@angular/core";
 import { Field, form } from "@angular/forms/signals";
-import { bootstrapApplication } from "@angular/platform-browser";
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
-import { firstValueFrom, fromEvent, takeUntil } from "rxjs";
+import { bootstrapApplication, DomSanitizer } from "@angular/platform-browser";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-const urlBase = "https://jsonplaceholder.typicode.com";
-
-@Injectable({ providedIn: "root" })
-class UserService {
-  getUsers() {
-    return httpResource<User[]>(() => `${urlBase}/users`);
-  }
-}
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.ts": { lang: "typescript" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
 @Injectable({ providedIn: "root" })
-class PostService {
-  getPosts(userIdSignal: Signal<number | undefined>) {
-    return httpResource<Post[]>(() => {
-      const userId = userIdSignal();
-      if (userId == undefined) return undefined;
-      return {
-        url: `${urlBase}/posts`,
-        params: { userId },
-      };
+class SourceService {
+  getSourceHTML(url: Signal<keyof typeof sources | undefined>) {
+    const domSanitizer = inject(DomSanitizer);
+
+    return resource({
+      params: () => ({ url: url() }),
+      loader: async ({ params: { url }, abortSignal }) => {
+        if (url === undefined) return undefined;
+        const html = await fetchSourceHTML(url, sources[url].lang, abortSignal);
+        return domSanitizer.bypassSecurityTrustHtml(html);
+      },
     });
   }
 }
@@ -46,77 +43,96 @@ class PostService {
 @Injectable({ providedIn: "root" })
 class ReadmeService {
   getReadmeHTML() {
-    const httpClient = inject(HttpClient);
-
     return resource({
-      loader: async ({ abortSignal }) => {
-        const [{ marked }, readmeMarkdown] = await Promise.all([
-          import("https://esm.sh/*marked@17.0.0"),
-          firstValueFrom(
-            httpClient
-              .get("./README.md", { responseType: "text" })
-              .pipe(takeUntil(fromEvent(abortSignal, "abort"))),
-          ),
-        ]);
-        return marked.parse(readmeMarkdown);
-      },
+      loader: ({ abortSignal }) => fetchReadmeHTML(abortSignal),
     });
   }
 }
 
 @Component({
-  selector: "app-root",
-  imports: [Field],
+  selector: "app-source",
   template: `
-    <section [innerHTML]="readmeHTML.value()"></section>
-    @if (users.hasValue()) {
-      <label>
-        Select User:
-        <select [field]="form.selectedUserId">
-          <option hidden selected></option>
-          @for (user of users.value(); track user.id) {
-            <option value="{{ user.id }}">
-              &#64;{{ user.username }}: {{ user.name }}
-            </option>
-          }
-        </select>
-      </label>
-    } @else if (users.isLoading()) {
-      <p>Loading Users...</p>
-    }
-    @if (posts.hasValue()) {
-      <ul>
-        @for (post of posts.value(); track post.id) {
-          <li>{{ post.title }}</li>
-        }
-      </ul>
-    } @else if (posts.isLoading()) {
-      <p>Loading Posts...</p>
-    } @else if (users.hasValue()) {
-      <p>Select User to view posts</p>
-    }
-    <p>
-      Data Source:
-      <a href="https://jsonplaceholder.typicode.com/" target="_blank">
-        JSONPlaceholder
-      </a>
-    </p>
+    <div [innerHTML]="sourceHTML()"></div>
   `,
 })
-class App {
-  readonly #formState = signal({ selectedUserId: "" });
-  readonly #selectedUserId = computed(() => {
-    const userId = this.#formState().selectedUserId;
-    if (userId === "") return undefined;
-    return +userId;
+class SourceView {
+  @Input({ required: true })
+  set url(value: keyof typeof sources) {
+    this.#url.set(value);
+  }
+
+  @Output()
+  protected readonly loadingChange = new EventEmitter<boolean>();
+
+  readonly #url = signal<keyof typeof sources | undefined>(undefined);
+  readonly #sourceHTML = inject(SourceService).getSourceHTML(this.#url);
+
+  protected readonly sourceHTML = linkedSignal({
+    source: () => this.#sourceHTML.value(),
+    computation: (current, previous) =>
+      current !== undefined ? current : previous?.value,
   });
 
+  constructor() {
+    effect(() => {
+      this.loadingChange.emit(this.#sourceHTML.isLoading());
+    });
+  }
+}
+
+@Component({
+  selector: "app-sources",
+  imports: [Field, SourceView],
+  template: `
+    <label>
+      Source:
+      <select [field]="form.sourceUrl">
+        @for (url of sourceUrls; track url) {
+          <option value="{{ url }}">{{ url }}</option>
+        }
+      </select>
+    </label>
+    @if (loading()) {
+      <progress></progress>
+    }
+    <app-source
+      [url]="selectedSourceUrl()"
+      (loadingChange)="loading.set($event)"
+    />
+  `,
+})
+class SourcesView {
+  readonly #formState = signal({
+    sourceUrl: "./index.html" as keyof typeof sources,
+  });
   protected readonly form = form(this.#formState);
-  protected readonly users = inject(UserService).getUsers();
-  protected readonly posts = inject(PostService).getPosts(
-    this.#selectedUserId,
+  protected readonly selectedSourceUrl = computed(() =>
+    this.#formState().sourceUrl
   );
+  protected readonly loading = signal(false);
+  protected readonly sourceUrls = Object.keys(
+    sources,
+  ) as (keyof typeof sources)[];
+}
+
+@Component({
+  selector: "app-readme",
+  template: `
+    <section [innerHTML]="readmeHTML.value()"></section>
+  `,
+})
+class ReadmeView {
   protected readonly readmeHTML = inject(ReadmeService).getReadmeHTML();
 }
+
+@Component({
+  selector: "app-root",
+  imports: [ReadmeView, SourcesView],
+  template: `
+    <app-readme />
+    <app-sources />
+  `,
+})
+class App {}
 
 await bootstrapApplication(App);
