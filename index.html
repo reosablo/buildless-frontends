@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Buildless Frontends</title>
     <script type="module">
-      import { marked } from "https://esm.sh/*marked@17.0.0";
+      import { fetchReadmeHTML } from "./utils.js";
 
-      const res = await fetch("./README.md");
-      const readme = await res.text();
-      document.body.innerHTML = marked.parse(readme);
+      document.body.innerHTML = await fetchReadmeHTML();
     </script>
   </head>
 </html>
