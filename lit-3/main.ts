@@ -1,170 +1,144 @@
-// deno-lint-ignore-file no-import-prefix
-
-import type {
-  Post,
-  User,
-} from "https://esm.sh/*@untypeable/jsonplaceholder@1.0.2";
 import { html, LitElement } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
-@customElement("app-root")
-export class AppElement extends LitElement {
-  static readonly #urlBase = "https://jsonplaceholder.typicode.com";
+const sources = {
+  "./index.html": { lang: "html" },
+  "./main.ts": { lang: "typescript" },
+  "./utils.js": { lang: "javascript" },
+} as const satisfies { [url: string]: { lang: string } };
 
-  @state()
-  private accessor _selectedUserId: number | undefined;
-
-  @state()
-  private accessor _users: User[] | undefined;
-  @state()
-  private accessor _loadingUsers = false;
-
-  @state()
-  private accessor _posts: Post[] | undefined;
-  @state()
-  private accessor _loadingPosts = false;
+@customElement("app-source")
+export class SourceViewElement extends LitElement {
+  @property()
+  accessor url!: keyof typeof sources | "";
 
   @state()
-  private accessor _readmeHTML: string | undefined;
+  private accessor _sourceHTML: string | undefined;
 
-  #usersController?: AbortController;
-  #postsController?: AbortController;
-  #readmeController?: AbortController;
+  #abortController?: AbortController;
 
-  override connectedCallback() {
-    super.connectedCallback();
-    this.#fetchUsers();
-    this.#fetchReadmeHTML();
+  override updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has("url")) {
+      this.#updateSource();
+    }
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.#usersController?.abort();
-    this.#postsController?.abort();
-    this.#readmeController?.abort();
-  }
-
-  override updated(changed: Map<string, unknown>) {
-    const selectedUserId = this._selectedUserId;
-    if (changed.has("_selectedUserId") && selectedUserId !== undefined) {
-      this.#fetchPosts(selectedUserId);
-    }
-  }
-
-  async #fetchUsers() {
-    this.#usersController?.abort();
-    const ctrl = this.#usersController = new AbortController();
-
-    this._loadingUsers = true;
-    try {
-      const res = await fetch(
-        `${AppElement.#urlBase}/users`,
-        { signal: ctrl.signal },
-      );
-      const users = await res.json() as User[];
-      ctrl.signal.throwIfAborted();
-      this._users = users;
-      this._loadingUsers = false;
-    } catch (error) {
-      if (ctrl.signal.aborted) return;
-      this._loadingUsers = false;
-      throw error;
-    }
-  }
-
-  async #fetchPosts(userId: number) {
-    this.#postsController?.abort();
-    const ctrl = this.#postsController = new AbortController();
-
-    this._loadingPosts = true;
-    try {
-      const res = await fetch(
-        `${AppElement.#urlBase}/posts?userId=${userId}`,
-        { signal: ctrl.signal },
-      );
-      const posts = await res.json() as Post[];
-      ctrl.signal.throwIfAborted();
-      this._posts = posts;
-      this._loadingPosts = false;
-    } catch (error) {
-      if (ctrl.signal.aborted) return;
-      this._loadingPosts = false;
-      throw error;
-    }
-  }
-
-  async #fetchReadmeHTML() {
-    this.#readmeController?.abort();
-    const ctrl = this.#readmeController = new AbortController();
-    try {
-      const [{ marked }, readmeMarkdown] = await Promise.all([
-        import("https://esm.sh/*marked@17.0.0"),
-        fetch("./README.md", { signal: ctrl.signal }).then((res) => res.text()),
-      ]);
-      const readmeHTML = await marked(readmeMarkdown);
-      ctrl.signal.throwIfAborted();
-      this._readmeHTML = readmeHTML;
-    } catch (error) {
-      if (ctrl.signal.aborted) return;
-      throw error;
-    }
+    this.#abortController?.abort();
   }
 
   override render() {
     return html`
-      <section>
-        ${unsafeHTML(this._readmeHTML ?? "")}
-      </section>
-      ${this._users
+      <div>${unsafeHTML(this._sourceHTML)}</div>
+    `;
+  }
+
+  async #updateSource() {
+    if (this.url === "") return;
+    this.#abortController?.abort();
+    const ctrl = this.#abortController = new AbortController();
+
+    this.dispatchEvent(new Event("app-loading"));
+    try {
+      this._sourceHTML = await fetchSourceHTML(
+        this.url,
+        sources[this.url].lang,
+        ctrl.signal,
+      );
+      this.dispatchEvent(new Event("app-load"));
+    } catch (error) {
+      if (!ctrl.signal.aborted) throw error;
+    }
+  }
+}
+
+@customElement("app-sources")
+export class SourcesViewElement extends LitElement {
+  @state()
+  private accessor _selectedSourceUrl: keyof typeof sources = "./index.html";
+
+  @state()
+  private accessor _loading: boolean = false;
+
+  override render() {
+    return html`
+      <label>
+        Source:
+        <select @change="${(
+          event: Event & { currentTarget: HTMLSelectElement },
+        ) => {
+          this._selectedSourceUrl = event.currentTarget
+            .value as keyof typeof sources;
+        }}">
+          ${Object.keys(sources).map((url) =>
+            html`
+              <option value="${url}">${url}</option>
+            `
+          )}
+        </select>
+      </label>
+      ${this._loading
         ? html`
-          <label>
-            Select User:
-            <select @change="${(
-              event: Event & { currentTarget: HTMLSelectElement },
-            ) => {
-              this._selectedUserId = +event.currentTarget.value;
-            }}">
-              <option selected hidden></option>
-              ${this._users.map((user) =>
-                html`
-                  <option value="${user.id}">
-                    @${user.username}: ${user.name}
-                  </option>
-                `
-              )}
-            </select>
-          </label>
-        `
-        : this._loadingUsers
-        ? html`
-          <p>Loading Users...</p>
-        `
-        : null} ${this._posts
-        ? html`
-          <ul>
-            ${this._posts.map((post) =>
-              html`
-                <li>${post.title}</li>
-              `
-            )}
-          </ul>
-        `
-        : this._loadingPosts
-        ? html`
-          <p>Loading Posts...</p>
-        `
-        : this._users !== undefined
-        ? html`
-          <p>Select User to view posts</p>
+          <progress />
         `
         : null}
-      <p>
-        Data Source:
-        <a href="https://jsonplaceholder.typicode.com/" target="_blank">
-          JSONPlaceholder
-        </a>
-      </p>
+      <app-source
+        url="${this._selectedSourceUrl}"
+        @app-loading="${() => {
+          this._loading = true;
+        }}"
+        @app-load="${() => {
+          this._loading = false;
+        }}"
+      ></app-source>
+    `;
+  }
+}
+
+@customElement("app-readme")
+export class AppReadmeElement extends LitElement {
+  @state()
+  private accessor _readmeHTML: string | undefined;
+
+  #abortController?: AbortController;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.#updateReadmeHTML();
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this.#abortController?.abort();
+  }
+
+  override render() {
+    return html`
+      <div>${unsafeHTML(this._readmeHTML)}</div>
+    `;
+  }
+
+  async #updateReadmeHTML() {
+    this.#abortController?.abort();
+    const ctrl = this.#abortController = new AbortController();
+
+    try {
+      this._readmeHTML = await fetchReadmeHTML(ctrl.signal);
+    } catch (error) {
+      if (!ctrl.signal.aborted) throw error;
+    }
+  }
+}
+
+@customElement("app-root")
+export class AppElement extends LitElement {
+  override render() {
+    return html`
+      <app-readme></app-readme>
+      <app-sources></app-sources>
     `;
   }
 }
