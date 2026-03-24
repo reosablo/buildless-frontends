@@ -13,7 +13,7 @@ import {
   type Signal,
   signal,
 } from "@angular/core";
-import { Field, form } from "@angular/forms/signals";
+import { form, FormField } from "@angular/forms/signals";
 import { bootstrapApplication, DomSanitizer } from "@angular/platform-browser";
 import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
@@ -75,11 +75,11 @@ class SourceView {
 
 @Component({
   selector: "app-sources",
-  imports: [Field, SourceView],
+  imports: [FormField, SourceView],
   template: `
     <label>
       Source:
-      <select [field]="form.sourceUrl">
+      <select [formField]="form.sourceUrl">
         @for (url of sourceUrls; track url) {
           <option value="{{ url }}">{{ url }}</option>
         }
