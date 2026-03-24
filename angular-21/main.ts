@@ -6,7 +6,6 @@ import {
   effect,
   EventEmitter,
   inject,
-  Injectable,
   Input,
   linkedSignal,
   Output,
@@ -24,29 +23,23 @@ const sources = {
   "./utils.js": { lang: "javascript" },
 } as const satisfies { [url: string]: { lang: string } };
 
-@Injectable({ providedIn: "root" })
-class SourceService {
-  getSourceHTML(url: Signal<keyof typeof sources | undefined>) {
-    const domSanitizer = inject(DomSanitizer);
+function sourceHTMLResource(url: Signal<keyof typeof sources | undefined>) {
+  const domSanitizer = inject(DomSanitizer);
 
-    return resource({
-      params: () => ({ url: url() }),
-      loader: async ({ params: { url }, abortSignal }) => {
-        if (url === undefined) return undefined;
-        const html = await fetchSourceHTML(url, sources[url].lang, abortSignal);
-        return domSanitizer.bypassSecurityTrustHtml(html);
-      },
-    });
-  }
+  return resource({
+    params: () => ({ url: url() }),
+    loader: async ({ params: { url }, abortSignal }) => {
+      if (url === undefined) return undefined;
+      const html = await fetchSourceHTML(url, sources[url].lang, abortSignal);
+      return domSanitizer.bypassSecurityTrustHtml(html);
+    },
+  });
 }
 
-@Injectable({ providedIn: "root" })
-class ReadmeService {
-  getReadmeHTML() {
-    return resource({
-      loader: ({ abortSignal }) => fetchReadmeHTML(abortSignal),
-    });
-  }
+function readmeHTMLResource() {
+  return resource({
+    loader: ({ abortSignal }) => fetchReadmeHTML(abortSignal),
+  });
 }
 
 @Component({
@@ -65,7 +58,7 @@ class SourceView {
   protected readonly loadingChange = new EventEmitter<boolean>();
 
   readonly #url = signal<keyof typeof sources | undefined>(undefined);
-  readonly #sourceHTML = inject(SourceService).getSourceHTML(this.#url);
+  readonly #sourceHTML = sourceHTMLResource(this.#url);
 
   protected readonly sourceHTML = linkedSignal({
     source: () => this.#sourceHTML.value(),
@@ -122,7 +115,7 @@ class SourcesView {
   `,
 })
 class ReadmeView {
-  protected readonly readmeHTML = inject(ReadmeService).getReadmeHTML();
+  protected readonly readmeHTML = readmeHTMLResource();
 }
 
 @Component({
