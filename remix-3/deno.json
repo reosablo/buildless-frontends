@@ -1,10 +1,8 @@
 {
   "imports": {
-    "@remix-run/component": "https://esm.sh/*@remix-run/component@0.4.0?dev",
-    "@remix-run/component/": "https://esm.sh/*@remix-run/component@0.4.0&dev/",
-    "@remix-run/interaction": "https://esm.sh/*@remix-run/interaction@0.5.0?dev",
-    "@remix-run/interaction/": "https://esm.sh/*@remix-run/interaction@0.5.0&dev/",
-    "remix/": "https://esm.sh/*remix@3.0.0-alpha.2&dev/"
+    "@remix-run/component": "https://esm.sh/*@remix-run/component@0.6.0?dev",
+    "@remix-run/component/": "https://esm.sh/*@remix-run/component@0.6.0&dev/",
+    "remix/": "https://esm.sh/*remix@3.0.0-alpha.4&dev/"
   },
   "compilerOptions": {
     "erasableSyntaxOnly": true,

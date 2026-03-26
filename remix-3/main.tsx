@@ -1,7 +1,12 @@
 /** @jsxImportSource remix/component */
 
-import { createRoot, type Handle } from "remix/component";
-import type { TypedEventTarget } from "remix/interaction";
+import {
+  addEventListeners,
+  createRoot,
+  type Handle,
+  on,
+  type TypedEventTarget,
+} from "remix/component";
 import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
 const sources = {
@@ -56,7 +61,7 @@ function SourcesView(handle: Handle) {
   let selectedSourceUrl: keyof typeof sources = "./index.html";
   let sourceLoading = false;
 
-  handle.on(sourceViewEvents, {
+  addEventListeners(sourceViewEvents, handle.signal, {
     loadingChange: (event) => {
       sourceLoading = event.detail;
       handle.update();
@@ -68,12 +73,12 @@ function SourcesView(handle: Handle) {
       <label>
         Source:
         <select
-          on={{
-            change: function handleChange(e) {
+          mix={[
+            on("change", function handleChange(e) {
               selectedSourceUrl = e.currentTarget.value as keyof typeof sources;
               handle.update();
-            },
-          }}
+            }),
+          ]}
         >
           {Object.keys(sources).map((url) => (
             <option key={url} value={url}>{url}</option>
