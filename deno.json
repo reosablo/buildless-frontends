@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "dev": "deno run --allow-net=localhost:8000 --allow-read=. --watch jsr:@std/http@1.0.25/file-server --host localhost"
+    "dev": "deno run --allow-net=localhost:8000 --allow-read=. jsr:@std/http@1.0.25/file-server --host localhost"
   }
 }
