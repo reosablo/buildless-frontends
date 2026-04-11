@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "react": "https://esm.sh/*react@19.2.4?dev",
+    "react/": "https://esm.sh/*react@19.2.4&dev/",
+    "react-dom": "https://esm.sh/*react-dom@19.2.4?dev",
+    "react-dom/": "https://esm.sh/*react-dom@19.2.4&dev/",
+    "scheduler": "https://esm.sh/*scheduler@^0.27.0?dev"
+  },
+  "compilerOptions": {
+    "erasableSyntaxOnly": true,
+    "lib": ["esnext", "dom", "dom.iterable", "dom.asynciterable"]
+  }
+}

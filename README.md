@@ -8,6 +8,7 @@ steps.
 * [Hono 4](./hono-4/)
 * [Lit 3](./lit-3/)
 * [Preact 10](./preact-10/)
+* [React 19](./react-19/)
 * [Remix 3](./remix-3/)
 * [Solid 1](./solid-1/)
 * [Solid 2](./solid-2/)
