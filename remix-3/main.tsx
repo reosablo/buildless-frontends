@@ -1,12 +1,6 @@
-/** @jsxImportSource remix/component */
+/** @jsxImportSource remix/ui */
 
-import {
-  addEventListeners,
-  createRoot,
-  type Handle,
-  on,
-  type TypedEventTarget,
-} from "remix/component";
+import { createRoot, type Handle, on } from "remix/ui";
 import { fetchReadmeHTML, fetchSourceHTML } from "./utils.js";
 
 const sources = {
@@ -16,57 +10,42 @@ const sources = {
 } as const satisfies { [url: string]: { lang: string } };
 
 function SourceView(
-  handle: Handle,
-  setup?: TypedEventTarget<{ loadingChange: CustomEvent<boolean> }>,
+  handle: Handle<{
+    url: keyof typeof sources;
+    onLoadingChange?: (loading: boolean) => void;
+  }>,
 ) {
   let sourceHTML: string | undefined;
   let previousUrl: keyof typeof sources | undefined;
   let abortController: AbortController | undefined;
 
-  return (props: { url: keyof typeof sources }) => {
-    if (props.url !== previousUrl) {
+  return () => {
+    const { url, onLoadingChange } = handle.props;
+    if (url !== previousUrl) {
       abortController?.abort();
       const ctrl = abortController = new AbortController();
       handle.queueTask(async () => {
+        onLoadingChange?.(true);
         const signal = AbortSignal.any([ctrl.signal, handle.signal]);
-        setup?.dispatchEvent(
-          new CustomEvent("loadingChange", { detail: true }),
-        );
-
         try {
-          sourceHTML = await fetchSourceHTML(
-            props.url,
-            sources[props.url].lang,
-            signal,
-          );
+          sourceHTML = await fetchSourceHTML(url, sources[url].lang, signal);
           handle.update();
-          setup?.dispatchEvent(
-            new CustomEvent("loadingChange", { detail: false }),
-          );
         } catch (error) {
           if (!signal.aborted) throw error;
+        } finally {
+          if (!signal.aborted) onLoadingChange?.(false);
         }
       });
     }
-    previousUrl = props.url;
+    previousUrl = url;
 
     return <div innerHTML={sourceHTML}></div>;
   };
 }
 
 function SourcesView(handle: Handle) {
-  const sourceViewEvents = new EventTarget() as NonNullable<
-    Parameters<typeof SourceView>[1]
-  >;
   let selectedSourceUrl: keyof typeof sources = "./index.html";
   let sourceLoading = false;
-
-  addEventListeners(sourceViewEvents, handle.signal, {
-    loadingChange: (event) => {
-      sourceLoading = event.detail;
-      handle.update();
-    },
-  });
 
   return () => (
     <>
@@ -86,7 +65,13 @@ function SourcesView(handle: Handle) {
         </select>
       </label>
       {sourceLoading && <progress />}
-      <SourceView url={selectedSourceUrl} setup={sourceViewEvents} />
+      <SourceView
+        url={selectedSourceUrl}
+        onLoadingChange={function handleLoadingChange(loading) {
+          sourceLoading = loading;
+          handle.update();
+        }}
+      />
     </>
   );
 }
