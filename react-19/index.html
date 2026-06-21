@@ -17,22 +17,15 @@
       }
     </script>
     <script type="module">
-      import {
-        availablePresets,
-        registerPlugin,
-        registerPreset,
-      } from "https://esm.sh/@babel/standalone@7.28.1";
-      import react from "https://esm.sh/babel-plugin-react-compiler@1.0.0";
+      import { registerPlugin } from "https://esm.sh/@babel/standalone@8.0.2";
+      import reactCompiler from "https://esm.sh/babel-plugin-react-compiler@1.0.0";
 
-      registerPreset("jsx", {
-        presets: [[availablePresets["react"], { runtime: "automatic" }]],
-      });
-      registerPlugin("react", react);
+      registerPlugin("react-compiler", reactCompiler);
     </script>
     <script
       type="text/babel"
-      data-presets="jsx,typescript"
-      data-plugins="react"
+      data-presets="react,typescript"
+      data-plugins="react-compiler"
       data-type="module"
       src="./main.tsx"
     ></script>
