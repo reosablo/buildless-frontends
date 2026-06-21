@@ -23,23 +23,20 @@
         availablePlugins,
         availablePresets,
         registerPreset,
-      } from "https://esm.sh/@babel/standalone@7.28.1";
+      } from "https://esm.sh/@babel/standalone@8.0.2";
 
       registerPreset("lit", {
         presets: [[availablePresets["typescript"]]],
         plugins: [
-          [availablePlugins["proposal-decorators"], { version: "2023-05" }],
-          [availablePlugins["transform-class-properties"]],
+          [availablePlugins["proposal-decorators"], { version: "2023-11" }],
           [availablePlugins["transform-class-static-block"]],
           [availablePlugins["transform-private-methods"]],
         ],
       });
     </script>
-    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
     <script
       type="text/babel"
       data-presets="lit"
-      data-plugins=""
       data-type="module"
       src="./main.ts"
     ></script>
