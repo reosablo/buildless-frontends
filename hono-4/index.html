@@ -12,21 +12,10 @@
         }
       }
     </script>
-    <script type="module">
-      import {
-        availablePresets,
-        registerPreset,
-      } from "https://esm.sh/@babel/standalone@7.28.1";
-
-      registerPreset("jsx", {
-        presets: [[availablePresets["react"], { runtime: "automatic" }]],
-      });
-    </script>
-    <!-- `data-plugins=""` attribute is required for @babel/standalone@7.28.1 -->
+    <script type="module" src="https://esm.sh/@babel/standalone@8.0.2"></script>
     <script
       type="text/babel"
-      data-presets="jsx,typescript"
-      data-plugins=""
+      data-presets="react,typescript"
       data-type="module"
       src="./main.tsx"
     ></script>
